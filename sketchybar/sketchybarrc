@@ -1,0 +1,71 @@
+#!/bin/bash
+
+PLUGIN_DIR="$HOME/.config/sketchybar/plugins"
+
+BAR_COLOR=0xaa101010
+ITEM_BG=0xcc202020
+ACTIVE_BG=0xfff5f5f5
+
+TEXT=0xffffffff
+TEXT_ACTIVE=0xff000000
+
+FONT="Hack Nerd Font:Bold:13.0"
+
+# BAR
+sketchybar --bar \
+  height=44 \
+  blur_radius=60 \
+  corner_radius=16 \
+  margin=14 \
+  y_offset=8 \
+  padding_left=18 \
+  padding_right=18 \
+  color=$BAR_COLOR \
+  sticky=on \
+  topmost=on
+
+# DEFAULT ITEM STYLE
+sketchybar --default \
+  icon.drawing=off \
+  label.font="$FONT" \
+  label.color=$TEXT \
+  background.height=30 \
+  background.corner_radius=10 \
+  background.color=$ITEM_BG \
+  background.drawing=on \
+  padding_left=8 \
+  padding_right=8 \
+  label.padding_left=10 \
+  label.padding_right=10
+
+# EVENT
+sketchybar --add event aerospace_workspace_change
+
+# WORKSPACES
+for WS in $(aerospace list-workspaces --all | sort -n); do
+
+  sketchybar --add item "ws.$WS" left
+
+  sketchybar --set "ws.$WS" \
+    label="$WS" \
+    click_script="aerospace workspace $WS" \
+    script="$PLUGIN_DIR/aerospace.sh"
+
+done
+
+# SPACER
+sketchybar --add item spacer center \
+  --set spacer width=20 drawing=off
+
+# CLOCK
+sketchybar --add item clock right
+
+sketchybar --set clock \
+  update_freq=1 \
+  script="date '+%H:%M'" \
+  background.drawing=on \
+  label.padding_left=12 \
+  label.padding_right=12
+
+# INITIALIZE
+sketchybar --trigger aerospace_workspace_change

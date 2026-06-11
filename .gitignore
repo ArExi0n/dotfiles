@@ -1,0 +1,16 @@
+.DS_Store
+cagent/
+configstore/
+fish/
+gh/
+github-copilot/
+iterm2/
+kitty/
+linearmouse/
+mpv/
+MyCLI/
+neonctl/
+opencode/
+raycast/
+solana/
+uv/
