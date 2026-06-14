@@ -7,15 +7,6 @@ return {
     opts = function()
       local dashboard = require("alpha.themes.dashboard")
 
-      local logo = [[
-                       ███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗
-                       ████╗  ██║██╔════╝██╔═══██╗██║   ██║██║████╗ ████║
-                       ██╔██╗ ██║█████╗  ██║   ██║██║   ██║██║██╔████╔██║
-                       ██║╚██╗██║██╔══╝  ██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║
-                       ██║ ╚████║███████╗╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║
-                       ╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝
-      ]]
-
       dashboard.section.header.val = vim.split(logo, "\n")
 
       dashboard.section.buttons.val = {

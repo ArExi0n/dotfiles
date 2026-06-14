@@ -68,12 +68,14 @@ return {
 				underline = false,
 				update_in_insert = false,
 				virtual_text = {
+					severity = { min = vim.diagnostic.severity.ERROR },
 					spacing = 4,
 					source = "if_many",
 					prefix = "●",
 				},
 				severity_sort = true,
 				signs = {
+					severity = { min = vim.diagnostic.severity.ERROR },
 					text = {
 						[vim.diagnostic.severity.ERROR] = " ",
 						[vim.diagnostic.severity.WARN] = " ",

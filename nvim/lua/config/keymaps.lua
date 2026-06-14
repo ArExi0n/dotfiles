@@ -52,8 +52,18 @@ vim.api.nvim_set_keymap("n", "<leader>tf", "<Plug>PlenaryTestFile", { noremap = 
 
 -- Better scrolling & joins
 vim.keymap.set("n", "J", "mzJ`z")
-vim.keymap.set("n", "<C-d>", "<C-d>zz")
-vim.keymap.set("n", "<C-u>", "<C-u>zz")
+vim.keymap.set("n", "<C-d>", function()
+  require("smear_cursor").enabled = false
+  local keys = vim.api.nvim_replace_termcodes("<C-d>zz", true, false, true)
+    .. vim.api.nvim_replace_termcodes("<Cmd>lua require('smear_cursor').enabled = true<CR>", true, false, true)
+  vim.api.nvim_feedkeys(keys, "n", false)
+end, { desc = "Scroll down half-page" })
+vim.keymap.set("n", "<C-u>", function()
+  require("smear_cursor").enabled = false
+  local keys = vim.api.nvim_replace_termcodes("<C-u>zz", true, false, true)
+    .. vim.api.nvim_replace_termcodes("<Cmd>lua require('smear_cursor').enabled = true<CR>", true, false, true)
+  vim.api.nvim_feedkeys(keys, "n", false)
+end, { desc = "Scroll up half-page" })
 vim.keymap.set("n", "n", "nzzzv")
 vim.keymap.set("n", "N", "Nzzzv")
 vim.keymap.set("n", "=ap", "ma=ap'a")
@@ -365,3 +375,19 @@ vim.keymap.set("n", "<leader>bd", function()
 		end
 	end)
 end, { desc = "Bookshelf: edit book description" })
+
+-- ========================
+-- DIAGNOSTICS TOGGLE
+-- ========================
+vim.g.diagnostics_errors_only = true
+local function toggle_diagnostics()
+	vim.g.diagnostics_errors_only = not vim.g.diagnostics_errors_only
+	local severity = vim.diagnostic.severity
+	local min = vim.g.diagnostics_errors_only and severity.ERROR or severity.HINT
+	vim.diagnostic.config({
+		virtual_text = { severity = { min = min } },
+		signs = { severity = { min = min } },
+	})
+	vim.notify("Diagnostics: " .. (vim.g.diagnostics_errors_only and "errors only" or "all"))
+end
+vim.keymap.set("n", "<leader>ud", toggle_diagnostics, { desc = "Toggle diagnostics: errors-only" })

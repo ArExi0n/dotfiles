@@ -19,8 +19,32 @@ return {
 	{
 		"nvim-lualine/lualine.nvim",
 		enabled = true,
+		config = function()
+			require("lualine").setup({
+				options = {
+					theme = "auto",
+					globalstatus = true,
+				},
+				sections = {
+					lualine_a = { "mode" },
+					lualine_b = { "branch" },
+					lualine_c = {
+						{ "diagnostics" },
+						{ "filetype", icon_only = true, separator = "", padding = { left = 1, right = 0 } },
+						{ "filename" },
+					},
+					lualine_x = {
+						{ "diff" },
+						{ "encoding" },
+						{ "fileformat" },
+						{ "filetype" },
+					},
+					lualine_y = { "progress" },
+					lualine_z = { "location" },
+				},
+			})
+		end,
 	},
-	-- messages, cmdline and the popupmenu
 	{
 		"folke/noice.nvim",
 		opts = function(_, opts)
@@ -54,14 +78,21 @@ return {
 
 			opts.commands = {
 				all = {
-					-- options for the message history that you get with `:Noice`
 					view = "split",
 					opts = { enter = true, format = "details" },
 					filter = {},
 				},
 			}
 
+			opts.cmdline = {
+				enabled = false,
+			}
+			opts.messages = {
+				enabled = false,
+			}
 			opts.presets.lsp_doc_border = true
+
+			return opts
 		end,
 	},
 
