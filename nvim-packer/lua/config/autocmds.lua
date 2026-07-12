@@ -30,15 +30,17 @@ vim.api.nvim_create_autocmd("FileType", {
 
 vim.api.nvim_create_autocmd("InsertLeave", {
   callback = function()
-    local ok, api = pcall(require, "supermaven-nvim.api")
-    if ok then api.clear_suggestion() end
+    pcall(function() require("supermaven-nvim.api").clear_suggestion() end)
+    pcall(function() require("blink.cmp").hide() end)
   end,
 })
 
-require("ArExi0n.diag-blob").setup()
+require("config.diag-blob").setup()
 
 vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "yaml", "yml", "typst" },
+  pattern = {
+    "yaml", "yml", "typst",
+  },
   callback = function()
     vim.bo.tabstop = 2
     vim.bo.softtabstop = 2

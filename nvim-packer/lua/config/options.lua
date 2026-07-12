@@ -2,7 +2,6 @@ vim.opt.guicursor = ""
 
 vim.opt.nu = true
 vim.opt.relativenumber = true
-vim.opt.numberwidth = 4
 
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
@@ -46,7 +45,6 @@ vim.opt.inccommand = "split"
 vim.opt.ignorecase = true
 vim.opt.smarttab = true
 vim.opt.breakindent = true
-vim.opt.wrap = false
 vim.opt.backspace = { "start", "eol", "indent" }
 vim.opt.path:append({ "**" })
 vim.opt.wildignore:append({ "*/node_modules/*" })
@@ -57,20 +55,18 @@ vim.opt.cursorline = false
 vim.opt.mouse = "a"
 vim.opt.formatoptions:append({ "r" })
 
-vim.opt.fillchars:append({ eob = " " })
-
 vim.opt.clipboard:append("unnamedplus")
 vim.opt.smartcase = true
 
 vim.filetype.add({
-  extension = {
-    gd = "gdscript",
-    gdshader = "gdshader",
-    gdshaderinc = "gdshaderinc",
-    tres = "gdresource",
-    tscn = "gdresource",
-  },
-  filename = {
-    ["project.godot"] = "godot",
-  },
+	extension = {
+		gd = "gdscript",
+		gdshader = "gdshader",
+		gdshaderinc = "gdshaderinc",
+		tres = "gdresource",
+		tscn = "gdresource",
+	},
+	filename = {
+		["project.godot"] = "godot",
+	},
 })

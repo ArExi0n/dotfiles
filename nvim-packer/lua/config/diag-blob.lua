@@ -49,7 +49,9 @@ function M.update()
   local pad = 1
 
   local ui = vim.api.nvim_list_uis()[1]
-  if not ui then return end
+  if not ui then
+    return
+  end
 
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
     buf = vim.api.nvim_create_buf(false, true)
