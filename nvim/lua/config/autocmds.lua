@@ -33,6 +33,24 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- Clear AI ghost text when leaving insert mode
+vim.api.nvim_create_autocmd("InsertLeave", {
+  callback = function()
+    pcall(function() require("copilot.suggestion").dismiss() end)
+    pcall(function() require("supermaven-nvim.api").clear_suggestion() end)
+    pcall(function() require("blink.cmp").hide() end)
+  end,
+})
+
+-- Apply transparent backgrounds on every colorscheme change
+vim.api.nvim_create_autocmd("ColorScheme", {
+	callback = function()
+		require("config.transparent").apply()
+	end,
+})
+
+require("config.diag-blob").setup()
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = {
     "yaml", "yml", "typst",

@@ -143,6 +143,22 @@ return {
 						},
 					},
 				},
+				rust_analyzer = {
+					autostart = true,
+					settings = {
+						["rust-analyzer"] = {
+							cargo = {
+								allFeatures = true,
+							},
+							checkOnSave = {
+								command = "clippy",
+							},
+							procMacro = {
+								enable = true,
+							},
+						},
+					},
+				},
 				sourcekit = {
 					cmd = { vim.trim(vim.fn.system("xcrun -f sourcekit-lsp")) },
 					filetypes = { "swift", "objc", "objcpp" },

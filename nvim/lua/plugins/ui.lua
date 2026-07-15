@@ -1,16 +1,7 @@
 return {
 	{
 		"sphamba/smear-cursor.nvim",
-		opts = {
-			time_interval = 10,
-			stiffness = 0.8,
-			trailing_stiffness = 0.6,
-			damping = 0.9,
-			stiffness_insert_mode = 0.7,
-			trailing_stiffness_insert_mode = 0.7,
-			damping_insert_mode = 0.95,
-			distance_stop_animating = 0.5,
-		},
+		enabled = false,
 	},
 	{
 		"nvimdev/dashboard-nvim",
@@ -19,81 +10,42 @@ return {
 	{
 		"nvim-lualine/lualine.nvim",
 		enabled = true,
-		config = function()
-			require("lualine").setup({
-				options = {
-					theme = "auto",
-					globalstatus = true,
-				},
-				sections = {
-					lualine_a = { "mode" },
-					lualine_b = { "branch" },
-					lualine_c = {
-						{ "diagnostics" },
-						{ "filetype", icon_only = true, separator = "", padding = { left = 1, right = 0 } },
-						{ "filename" },
+		opts = {
+			options = {
+				theme = {
+					normal = {
+						a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+						b = { bg = "#101010", fg = "#b0b0b0" },
+						c = { bg = "#101010", fg = "#b0b0b0" },
 					},
-					lualine_x = {
-						{ "diff" },
-						{ "encoding" },
-						{ "fileformat" },
-						{ "filetype" },
+					insert = {
+						a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+						b = { bg = "#101010", fg = "#b0b0b0" },
+						c = { bg = "#101010", fg = "#b0b0b0" },
 					},
-					lualine_y = { "progress" },
-					lualine_z = { "location" },
+					visual = {
+						a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+						b = { bg = "#101010", fg = "#b0b0b0" },
+						c = { bg = "#101010", fg = "#b0b0b0" },
+					},
+					replace = {
+						a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+						b = { bg = "#101010", fg = "#b0b0b0" },
+						c = { bg = "#101010", fg = "#b0b0b0" },
+					},
+					command = {
+						a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+						b = { bg = "#101010", fg = "#b0b0b0" },
+						c = { bg = "#101010", fg = "#b0b0b0" },
+					},
+					inactive = {
+						a = { bg = "#101010", fg = "#474747" },
+						b = { bg = "#101010", fg = "#474747" },
+						c = { bg = "#101010", fg = "#474747" },
+					},
 				},
-			})
-		end,
-	},
-	{
-		"folke/noice.nvim",
-		opts = function(_, opts)
-			table.insert(opts.routes, {
-				filter = {
-					event = "notify",
-					find = "No information available",
-				},
-				opts = { skip = true },
-			})
-			local focused = true
-			vim.api.nvim_create_autocmd("FocusGained", {
-				callback = function()
-					focused = true
-				end,
-			})
-			vim.api.nvim_create_autocmd("FocusLost", {
-				callback = function()
-					focused = false
-				end,
-			})
-			table.insert(opts.routes, 1, {
-				filter = {
-					cond = function()
-						return not focused
-					end,
-				},
-				view = "notify_send",
-				opts = { stop = false },
-			})
-
-			opts.commands = {
-				all = {
-					view = "split",
-					opts = { enter = true, format = "details" },
-					filter = {},
-				},
-			}
-
-			opts.cmdline = {
-				enabled = false,
-			}
-			opts.messages = {
-				enabled = false,
-			}
-			opts.presets.lsp_doc_border = true
-
-			return opts
-		end,
+			},
+		},
 	},
 
 	{
@@ -180,9 +132,5 @@ return {
 				"<cmd>tabnew<cr><bar><bar><cmd>DBUI<cr>",
 			},
 		},
-	},
-	{
-		"nvim-tree/nvim-tree.lua",
-		enabled = false,
 	},
 }

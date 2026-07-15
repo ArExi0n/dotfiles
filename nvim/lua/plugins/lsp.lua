@@ -21,6 +21,14 @@ return {
 				"prettier",
 				"clangd",
 				"xcode-build-server",
+				"stylua",
+				"shfmt",
+				"ruff",
+				"gofumpt",
+				"goimports",
+				"ktlint",
+				"taplo",
+				"rubocop",
 			})
 		end,
 		config = function(_, opts)
@@ -68,14 +76,12 @@ return {
 				underline = false,
 				update_in_insert = false,
 				virtual_text = {
-					severity = { min = vim.diagnostic.severity.ERROR },
 					spacing = 4,
 					source = "if_many",
 					prefix = "●",
 				},
 				severity_sort = true,
 				signs = {
-					severity = { min = vim.diagnostic.severity.ERROR },
 					text = {
 						[vim.diagnostic.severity.ERROR] = " ",
 						[vim.diagnostic.severity.WARN] = " ",
@@ -214,25 +220,7 @@ return {
 					},
 				},
 
-				rust_analyzer = {
-					autostart = true,
-					settings = {
-						["rust-analyzer"] = {
-							cargo = {
-								allFeatures = false,
-								loadOutDirsFromCheck = true,
-								buildScripts = { enable = true },
-							},
-							checkOnSave = { command = "check", allFeatures = false },
-							procMacro = { enable = true },
-							completion = { callable = { snippets = "fill_arguments" } },
-							imports = {
-								merge = { glob = true },
-								preferNoStd = false,
-							},
-						},
-					},
-				},
+				rust_analyzer = false,
 
 				gopls = {
 					autostart = true,
@@ -258,6 +246,52 @@ return {
 				},
 
 				zls = { autostart = true },
+
+				tinymist = {
+					autostart = true,
+					settings = {
+						defaultEntryFile = "",
+						exportPdf = "onSave",
+						outputPath = "$root/$name",
+						formatterMode = "typstyle",
+						previewFeature = "enable",
+						sysInputs = {},
+						preview = {
+							invertColors = "always",
+						},
+					},
+					root_dir = function(fname)
+						return require("lspconfig.util").root_pattern("typst.toml", ".git")(fname)
+							or vim.fn.fnamemodify(fname, ":h")
+					end,
+					on_attach = function(client, bufnr)
+						local function notify(cmd, args)
+							client:exec_cmd({ command = cmd, arguments = args }, { bufnr = bufnr }, function(err, res)
+								if err then
+									vim.notify(string.format("tinymist: %s — %s", cmd, err.message), vim.log.levels.ERROR)
+								else
+									vim.notify(string.format("tinymist: %s — %s", cmd, vim.inspect(res)), vim.log.levels.INFO)
+								end
+							end)
+						end
+						vim.keymap.set("n", "<leader>tp", function()
+							notify("tinymist.startDefaultPreview", { vim.api.nvim_buf_get_name(bufnr) })
+						end, { buffer = bufnr, desc = "Typst: start preview" })
+						vim.keymap.set("n", "<leader>tP", function()
+							notify("tinymist.doKillPreview", {})
+						end, { buffer = bufnr, desc = "Typst: stop preview" })
+						vim.keymap.set("n", "<leader>te", function()
+							notify("tinymist.exportPdf", { vim.api.nvim_buf_get_name(bufnr) })
+						end, { buffer = bufnr, desc = "Typst: export PDF" })
+						vim.keymap.set("n", "<leader>ts", function()
+							notify("tinymist.exportSvg", { vim.api.nvim_buf_get_name(bufnr) })
+						end, { buffer = bufnr, desc = "Typst: export SVG" })
+						vim.keymap.set("n", "<leader>tv", function()
+							local pdf = vim.fn.expand("%:r") .. ".pdf"
+							vim.fn.jobstart({ "sioyek", pdf }, { detach = true })
+						end, { buffer = bufnr, desc = "Typst: open in sioyek" })
+					end,
+				},
 			},
 
 			setup = {},
@@ -278,24 +312,30 @@ return {
 
 			local ensure_installed = {}
 			for server, _ in pairs(opts.servers or {}) do
-				if server ~= "sourcekit" then
+				if server ~= "sourcekit" and server ~= "rust_analyzer" then
 					table.insert(ensure_installed, server)
 				end
 			end
 
-			require("mason-lspconfig").setup({
-				ensure_installed = ensure_installed,
-				automatic_installation = true,
-				handlers = {
-					function(server_name)
-						local server_opts = opts.servers[server_name] or {}
-						server_opts.capabilities =
-							vim.tbl_deep_extend("force", {}, capabilities, server_opts.capabilities or {})
-						require("lspconfig")[server_name].setup(server_opts)
-					end,
-				},
-			})
+      require("mason-lspconfig").setup({
+        ensure_installed = ensure_installed,
+        automatic_installation = true,
+        automatic_enable = { exclude = { "rust_analyzer" } },
+        handlers = {
+          function(server_name)
+            local server_opts = opts.servers[server_name]
+            if server_opts == false then return end
+            server_opts = server_opts or {}
+            server_opts.capabilities =							vim.tbl_deep_extend("force", {}, capabilities, server_opts.capabilities or {})
+            local ok, err = pcall(require("lspconfig")[server_name].setup, server_opts)
+            if not ok then
+              vim.notify(("Failed to setup %s: %s"):format(server_name, err), vim.log.levels.WARN)
+            end
+          end,
+        },
+      })
 
+			-- Direct setup for sourcekit
 			local sk_opts = vim.tbl_deep_extend("force", opts.servers.sourcekit or {}, {
 				capabilities = capabilities,
 			})
@@ -352,14 +392,19 @@ return {
 					map("n", "[d", vim.diagnostic.goto_prev, "LSP: Previous diagnostic")
 					map("n", "]d", vim.diagnostic.goto_next, "LSP: Next diagnostic")
 				map("n", "<leader>vca", vim.lsp.buf.code_action, "LSP: Code action")
-				map("n", "<leader>vi", function()
-					vim.lsp.buf.code_action({
-						context = {
-							only = { "source.organizeImports", "source.addMissingImports", "source.fixAll" },
-						},
-						apply = true,
-					})
-				end, "LSP: Fix imports")
+					map({ "n", "x" }, "<leader>qf", function()
+						vim.lsp.buf.code_action({ context = { only = { "quickfix" } } })
+					end, "LSP: Quick fix")
+map("n", "<leader>vi", function()
+				local actions = vim.lsp.buf.code_action({
+					context = {
+						only = { "source.organizeImports", "source.addMissingImports", "source.fixAll" },
+					},
+				})
+				if not actions or vim.tbl_isempty(actions.result or {}) then
+					actions = vim.lsp.buf.code_action()
+				end
+			end, "LSP: Fix imports")
 				map("n", "<leader>vrr", vim.lsp.buf.references, "LSP: References")
 					map("n", "<leader>vrn", vim.lsp.buf.rename, "LSP: Rename")
 					map("i", "<C-h>", vim.lsp.buf.signature_help, "LSP: Signature help")
@@ -429,6 +474,8 @@ return {
 			formatters_by_ft = {
 				lua = { "stylua" },
 				sh = { "shfmt" },
+				python = { "ruff_format" },
+				go = { "gofumpt", "goimports" },
 				javascript = { "prettier" },
 				typescript = { "prettier" },
 				javascriptreact = { "prettier" },
@@ -436,10 +483,15 @@ return {
 				json = { "prettier" },
 				html = { "prettier" },
 				css = { "prettier" },
+				yaml = { "prettier" },
+				markdown = { "prettier" },
 				rust = { "rustfmt" },
 				cpp = { "clang-format" },
 				c = { "clang-format" },
 				swift = { "swiftformat" },
+				kotlin = { "ktlint" },
+				toml = { "taplo" },
+				ruby = { "rubocop" },
 			},
 			format_on_save = {
 				timeout_ms = 500,

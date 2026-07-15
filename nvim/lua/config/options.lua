@@ -22,6 +22,7 @@ vim.opt.incsearch = true
 vim.opt.termguicolors = true
 
 vim.opt.scrolloff = 10
+vim.opt.smoothscroll = false
 vim.opt.signcolumn = "auto"
 vim.opt.isfname:append("@-@")
 
@@ -33,7 +34,6 @@ vim.g.mapleader = " "
 vim.scriptencoding = "utf-8"
 vim.opt.encoding = "utf-8"
 vim.opt.fileencoding = "utf-8"
-
 vim.opt.number = true
 
 vim.opt.title = true
@@ -41,7 +41,6 @@ vim.opt.autoindent = true
 vim.opt.showcmd = true
 vim.opt.cmdheight = 1
 vim.opt.laststatus = 3
-vim.opt.showcmd = false
 vim.opt.inccommand = "split"
 vim.opt.ignorecase = true
 vim.opt.smarttab = true

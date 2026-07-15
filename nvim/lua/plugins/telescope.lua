@@ -45,20 +45,21 @@ return {
 				desc = "Live grep",
 			},
 			{
-				"<leader>fw",
+				"<leader>ps",
 				function()
 					require("telescope.builtin").grep_string({ search = vim.fn.input("Grep > ") })
 				end,
 				desc = "Grep search",
 			},
 			{
-				"<leader>fW",
+				"<leader>fw",
 				function()
-					require("telescope.builtin").grep_string({ search = vim.fn.expand("<cword>") })
+					require("telescope.builtin").live_grep()
 				end,
+				desc = "Fuzzy search words in project",
 			},
 			{
-				"<leader>pWs",
+				"<leader>fW",
 				function()
 					require("telescope.builtin").grep_string({ search = vim.fn.expand("<cWORD>") })
 				end,
@@ -213,10 +214,4 @@ return {
 			telescope.load_extension("file_browser")
 		end,
 	},
-{
-  "folke/flash.nvim",
-  event = "VeryLazy",
-  ---@type Flash.Config
-  opts = {},
-  },
 }

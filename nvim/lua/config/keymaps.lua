@@ -31,8 +31,23 @@ vim.keymap.set("n", "<C-h>", "<Cmd>bprev<CR>", { desc = "Prev buffer" })
 vim.keymap.set("n", "[b", "<Cmd>bprev<CR>", { desc = "Prev buffer" })
 vim.keymap.set("n", "]b", "<Cmd>bnext<CR>", { desc = "Next buffer" })
 
--- File explorer
-vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<CR>", { desc = "Toggle file explorer" })
+
+-- Oil toggle
+vim.keymap.set("n", "<leader>e", function()
+	if vim.bo.filetype == "oil" then
+		local prev = vim.g.oil_prev_buf
+		if prev and vim.api.nvim_buf_is_valid(prev) then
+			vim.api.nvim_win_set_buf(0, prev)
+			return
+		end
+		vim.cmd("b#")
+	else
+		vim.g.oil_prev_buf = vim.api.nvim_get_current_buf()
+		local dir = vim.fn.expand("%:p:h")
+		if dir == "" then dir = vim.fn.getcwd() end
+		require("oil").open(dir)
+	end
+end, { desc = "Toggle file explorer" })
 
 -- Move selected lines
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
@@ -44,7 +59,6 @@ vim.keymap.set("n", "<S-Tab>", "<cmd>BufferLineCyclePrev<CR>", { desc = "Go to p
 vim.keymap.set("n", "<leader>x", "<cmd>bdelete<CR>", { desc = "Close current buffer" })
 vim.keymap.set("n", "<leader>n", "<cmd>tabnew<CR>", { desc = "New tab" })
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
-vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
 
 -- Plenary test
@@ -52,18 +66,8 @@ vim.api.nvim_set_keymap("n", "<leader>tf", "<Plug>PlenaryTestFile", { noremap = 
 
 -- Better scrolling & joins
 vim.keymap.set("n", "J", "mzJ`z")
-vim.keymap.set("n", "<C-d>", function()
-  require("smear_cursor").enabled = false
-  local keys = vim.api.nvim_replace_termcodes("<C-d>zz", true, false, true)
-    .. vim.api.nvim_replace_termcodes("<Cmd>lua require('smear_cursor').enabled = true<CR>", true, false, true)
-  vim.api.nvim_feedkeys(keys, "n", false)
-end, { desc = "Scroll down half-page" })
-vim.keymap.set("n", "<C-u>", function()
-  require("smear_cursor").enabled = false
-  local keys = vim.api.nvim_replace_termcodes("<C-u>zz", true, false, true)
-    .. vim.api.nvim_replace_termcodes("<Cmd>lua require('smear_cursor').enabled = true<CR>", true, false, true)
-  vim.api.nvim_feedkeys(keys, "n", false)
-end, { desc = "Scroll up half-page" })
+vim.keymap.set("n", "<C-d>", "<C-d>zz")
+vim.keymap.set("n", "<C-u>", "<C-u>zz")
 vim.keymap.set("n", "n", "nzzzv")
 vim.keymap.set("n", "N", "Nzzzv")
 vim.keymap.set("n", "=ap", "ma=ap'a")
@@ -110,6 +114,8 @@ vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz", { desc = "Next quickfix" })
 vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz", { desc = "Previous quickfix" })
 vim.keymap.set("n", "<leader>k", "<cmd>lnext<CR>zz", { desc = "Next location" })
 vim.keymap.set("n", "<leader>j", "<cmd>lprev<CR>zz", { desc = "Previous location" })
+vim.keymap.set("n", "<leader>tt", "<cmd>Trouble quickfix toggle<cr>", { desc = "Toggle trouble quickfix" })
+vim.keymap.set("n", "<leader>qx", "<cmd>Telescope quickfix<cr>", { desc = "Show quickfix list" })
 
 -- Replace word under cursor (whole file) — prompts for replacement word
 vim.keymap.set("n", "<leader>s", function()
@@ -166,24 +172,72 @@ vim.keymap.set(
 	{ desc = "Insert logger.Error" }
 )
 
+-- Toggle AI providers independently
+local ai_state = {
+  copilot = true,
+  supermaven = true,
+}
+vim.keymap.set("n", "<leader>aid", function()
+  local label = function(name, enabled)
+    return (enabled and "[x] " or "[ ] ") .. name
+  end
+  local items = {
+    { label = label("Copilot", ai_state.copilot), key = "copilot" },
+    { label = label("Supermaven", ai_state.supermaven), key = "supermaven" },
+    { label = "---", key = "sep" },
+    { label = "Enable all", key = "enable_all" },
+    { label = "Disable all", key = "disable_all" },
+  }
+  vim.ui.select(items, {
+    prompt = "AI providers:",
+    format_item = function(item) return item.label end,
+  }, function(choice)
+    if not choice then return end
+    local function set_copilot(on)
+      pcall(function()
+        if on then require("copilot.suggestion").enable() else require("copilot.suggestion").disable() end
+      end)
+      ai_state.copilot = on
+    end
+    local function set_supermaven(on)
+      pcall(function()
+        if on then require("supermaven-nvim.api").start() else require("supermaven-nvim.api").stop() end
+      end)
+      ai_state.supermaven = on
+    end
+    if choice.key == "copilot" then
+      set_copilot(not ai_state.copilot)
+    elseif choice.key == "supermaven" then
+      set_supermaven(not ai_state.supermaven)
+    elseif choice.key == "enable_all" then
+      set_copilot(true); set_supermaven(true)
+    elseif choice.key == "disable_all" then
+      set_copilot(false); set_supermaven(false)
+    end
+    vim.notify(string.format("Copilot: %s, Supermaven: %s",
+      ai_state.copilot and "on" or "off",
+      ai_state.supermaven and "on" or "off"), vim.log.levels.INFO)
+  end)
+end, { desc = "Toggle AI provider(s)" })
+
 -- ========================
 -- LSP KEYMAPS
 -- ========================
-vim.keymap.set("n", "gd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
-vim.keymap.set("n", "<leader>gd", vim.lsp.buf.definition, { desc = "Go to definition" })
-vim.keymap.set("n", "gD", vim.lsp.buf.declaration, { desc = "Go to declaration" })
-vim.keymap.set("n", "gi", vim.lsp.buf.implementation, { desc = "Go to implementation" })
-vim.keymap.set("n", "gr", vim.lsp.buf.references, { desc = "References" })
-vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "Hover documentation" })
+vim.keymap.set("n", "gd", function() vim.diagnostic.open_float() end, { desc = "Line diagnostics" })
+vim.keymap.set("n", "<leader>gd", function() vim.lsp.buf.definition() end, { desc = "Go to definition" })
+vim.keymap.set("n", "gD", function() vim.lsp.buf.declaration() end, { desc = "Go to declaration" })
+vim.keymap.set("n", "gi", function() vim.lsp.buf.implementation() end, { desc = "Go to implementation" })
+vim.keymap.set("n", "gr", function() vim.lsp.buf.references() end, { desc = "References" })
+vim.keymap.set("n", "H", function() vim.lsp.buf.hover() end, { desc = "Hover documentation" })
 vim.keymap.set("n", "<leader>vws", function()
 	require("telescope.builtin").lsp_workspace_symbols()
 end, { desc = "Workspace symbols" })
-vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Previous diagnostic" })
-vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Next diagnostic" })
-vim.keymap.set("n", "<leader>vca", vim.lsp.buf.code_action, { desc = "Code action" })
-vim.keymap.set("n", "<leader>vrr", vim.lsp.buf.references, { desc = "References" })
-vim.keymap.set("n", "<leader>vrn", vim.lsp.buf.rename, { desc = "Rename symbol" })
-vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, { desc = "Signature help" })
+vim.keymap.set("n", "[d", function() vim.diagnostic.goto_prev() end, { desc = "Previous diagnostic" })
+vim.keymap.set("n", "]d", function() vim.diagnostic.goto_next() end, { desc = "Next diagnostic" })
+vim.keymap.set("n", "<leader>vca", function() vim.lsp.buf.code_action() end, { desc = "Code action" })
+vim.keymap.set("n", "<leader>vrr", function() vim.lsp.buf.references() end, { desc = "References" })
+vim.keymap.set("n", "<leader>vrn", function() vim.lsp.buf.rename() end, { desc = "Rename symbol" })
+vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, { desc = "Signature help" })
 
 vim.keymap.set("n", "<leader>f", function()
 	vim.lsp.buf.format({ async = true })
@@ -199,25 +253,33 @@ vim.keymap.set("n", "<leader><leader>", function()
 	vim.cmd("so")
 end, { desc = "Reload config" })
 
+
+
+local function tinymist_cmd(cmd, args)
+	local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
+	if not client then
+		vim.notify("tinymist not attached", vim.log.levels.ERROR)
+		return
+	end
+	client:exec_cmd({ command = cmd, arguments = args or {} }, { bufnr = 0 }, function(err, res)
+		if err then
+			vim.notify(string.format("tinymist: %s — %s", cmd, err.message), vim.log.levels.ERROR)
+		else
+			vim.notify(string.format("tinymist: %s — %s", cmd, vim.inspect(res)), vim.log.levels.INFO)
+		end
+	end)
+end
+
 vim.keymap.set("n", "<leader>tp", function()
-	vim.lsp.buf.execute_command({
-		command = "tinymist.startDefaultPreview",
-		arguments = { vim.api.nvim_buf_get_name(0) },
-	})
+	tinymist_cmd("tinymist.startDefaultPreview", { vim.api.nvim_buf_get_name(0) })
 end, { desc = "Typst: start preview" })
 
 vim.keymap.set("n", "<leader>tP", function()
-	vim.lsp.buf.execute_command({
-		command = "tinymist.stopPreview",
-		arguments = {},
-	})
+	tinymist_cmd("tinymist.doKillPreview")
 end, { desc = "Typst: stop preview" })
 
 vim.keymap.set("n", "<leader>te", function()
-	vim.lsp.buf.execute_command({
-		command = "tinymist.exportPdf",
-		arguments = { vim.api.nvim_buf_get_name(0) },
-	})
+	tinymist_cmd("tinymist.exportPdf", { vim.api.nvim_buf_get_name(0) })
 end, { desc = "Typst: export PDF" })
 
 vim.keymap.set("n", "<leader>tv", function()
@@ -375,19 +437,3 @@ vim.keymap.set("n", "<leader>bd", function()
 		end
 	end)
 end, { desc = "Bookshelf: edit book description" })
-
--- ========================
--- DIAGNOSTICS TOGGLE
--- ========================
-vim.g.diagnostics_errors_only = true
-local function toggle_diagnostics()
-	vim.g.diagnostics_errors_only = not vim.g.diagnostics_errors_only
-	local severity = vim.diagnostic.severity
-	local min = vim.g.diagnostics_errors_only and severity.ERROR or severity.HINT
-	vim.diagnostic.config({
-		virtual_text = { severity = { min = min } },
-		signs = { severity = { min = min } },
-	})
-	vim.notify("Diagnostics: " .. (vim.g.diagnostics_errors_only and "errors only" or "all"))
-end
-vim.keymap.set("n", "<leader>ud", toggle_diagnostics, { desc = "Toggle diagnostics: errors-only" })

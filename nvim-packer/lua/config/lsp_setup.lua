@@ -124,6 +124,9 @@ M.servers = {
 		cmd = { "clangd", "xcode-build-server", "--background-index", "--clang-tidy", "--header-insertion=iwyu", "--completion-style=detailed" },
 	},
 	zls = { autostart = true },
+	rust_analyzer = {
+		autostart = true,
+	},
 	tinymist = {
 		autostart = true,
 		settings = {

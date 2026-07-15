@@ -34,7 +34,6 @@ return {
             vim.notify("Not a C/C++ file", vim.log.levels.WARN)
             return
           end
-
           local src = vim.fn.expand("%:p")
           local ext = vim.fn.expand("%:e")
           local out = vim.fn.expand("%:p:r") .. ".out"

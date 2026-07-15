@@ -34,6 +34,7 @@ require("lazy").setup({
 		{ import = "lazyvim.plugins.extras.lang.tailwind" },
 		{ import = "lazyvim.plugins.extras.coding.blink" },
 		{ import = "lazyvim.plugins.extras.util.mini-hipatterns" },
+		{ "folke/noice.nvim", enabled = false },
 		{ import = "plugins" },
 	},
 	defaults = {

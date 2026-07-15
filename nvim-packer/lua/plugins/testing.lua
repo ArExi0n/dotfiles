@@ -10,6 +10,6 @@ return {
 			"nvim-neotest/neotest-plenary",
 			"weilbith/neotest-gradle",
 		},
-		config = { "lua require('config.neotest').setup()" },
+		config = { "require('config.neotest').setup()" },
 	},
 }
