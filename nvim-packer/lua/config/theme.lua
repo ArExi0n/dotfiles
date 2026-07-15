@@ -49,10 +49,14 @@ local function apply(name, opts)
 		return false
 	end
 
-	-- Make Normal background transparent for all themes
+	-- Make background transparent for all themes
 	vim.api.nvim_set_hl(0, "Normal", { bg = "NONE" })
 	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "NONE" })
 	vim.api.nvim_set_hl(0, "NormalNC", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "EndOfBuffer", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "SignColumn", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "LineNr", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "CursorLineNr", { bg = "NONE" })
 
 	if name:match("^koda") then
 		pcall(require("config.monochrome").apply)
