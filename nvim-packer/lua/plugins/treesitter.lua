@@ -4,7 +4,8 @@ return {
 		requires = {
 			"nvim-treesitter/nvim-treesitter-textobjects",
 		},
-		cmd = { "TSUpdateSync", "TSUpdate", "TSInstall" },
+		event = { "BufReadPost", "BufNewFile" },
+		cmd = { "TSInstallSync", "TSUpdateSync", "TSUpdate", "TSInstall" },
 		config = function()
 			require("nvim-treesitter.config").setup({
 				ensure_installed = {
@@ -21,8 +22,11 @@ return {
 					"rust",
 					"c",
 					"cpp",
-					"go",
-					"python",
+				"go",
+				"gomod",
+				"gowork",
+				"gosum",
+				"python",
 					"lua",
 					"vim",
 					"vimdoc",
@@ -74,6 +78,8 @@ return {
 							["if"] = "@function.inner",
 							["ac"] = "@class.outer",
 							["ic"] = "@class.inner",
+							["ab"] = "@block.outer",
+							["ib"] = "@block.inner",
 						},
 					},
 					move = {
@@ -82,18 +88,22 @@ return {
 						goto_next_start = {
 							["]f"] = "@function.outer",
 							["]c"] = "@class.outer",
+							["]a"] = "@parameter.inner",
 						},
 						goto_next_end = {
 							["]F"] = "@function.outer",
 							["]C"] = "@class.outer",
+							["]A"] = "@parameter.inner",
 						},
 						goto_previous_start = {
 							["[f"] = "@function.outer",
 							["[c"] = "@class.outer",
+							["[a"] = "@parameter.inner",
 						},
 						goto_previous_end = {
 							["[F"] = "@function.outer",
 							["[C"] = "@class.outer",
+							["[A"] = "@parameter.inner",
 						},
 					},
 				},

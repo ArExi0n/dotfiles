@@ -143,22 +143,22 @@ return {
 						},
 					},
 				},
-				rust_analyzer = {
-					autostart = true,
-					settings = {
-						["rust-analyzer"] = {
-							cargo = {
-								allFeatures = true,
-							},
-							checkOnSave = {
-								command = "clippy",
-							},
-							procMacro = {
-								enable = true,
-							},
+			rust_analyzer = {
+				autostart = true,
+				settings = {
+					["rust-analyzer"] = {
+						cargo = {
+							allFeatures = true,
+						},
+						checkOnSave = {
+							command = "clippy",
+						},
+						procMacro = {
+							enable = true,
 						},
 					},
 				},
+			},
 				sourcekit = {
 					cmd = { vim.trim(vim.fn.system("xcrun -f sourcekit-lsp")) },
 					filetypes = { "swift", "objc", "objcpp" },
@@ -371,8 +371,10 @@ return {
 
 					map("n", "<leader>gd", vim.lsp.buf.definition, "LSP: Go to definition")
 					map("n", "gD", vim.lsp.buf.declaration, "LSP: Go to declaration")
-					map("n", "gi", vim.lsp.buf.implementation, "LSP: Go to implementation")
-					map("n", "gr", vim.lsp.buf.references, "LSP: References")
+				map("n", "gi", vim.lsp.buf.implementation, "LSP: Go to implementation")
+				map("n", "gI", vim.lsp.buf.implementation, "LSP: Go to implementation")
+				map("n", "gy", vim.lsp.buf.type_definition, "LSP: Go to type definition")
+				map("n", "gr", vim.lsp.buf.references, "LSP: References")
 					map("n", "K", vim.lsp.buf.hover, "LSP: Hover")
 					map("n", "<leader>vws", vim.lsp.buf.workspace_symbol, "LSP: Workspace symbol")
 					map("n", "<leader>vd", function()
@@ -423,9 +425,8 @@ return {
 			})
 
 			vim.api.nvim_create_autocmd("ColorScheme", {
-				group = vim.api.nvim_create_augroup("lualine-overrides", { clear = true }),
+				group = vim.api.nvim_create_augroup("monochrome-overrides", { clear = true }),
 				callback = function()
-					pcall(require("config.monochrome").apply_lualine)
 					if vim.g.colors_name and vim.g.colors_name:match("^koda") then
 						pcall(require("config.monochrome").apply)
 					end

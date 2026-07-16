@@ -2,6 +2,7 @@ vim.opt.guicursor = ""
 
 vim.opt.nu = true
 vim.opt.relativenumber = true
+vim.opt.numberwidth = 4
 
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
@@ -40,7 +41,7 @@ vim.opt.title = true
 vim.opt.autoindent = true
 vim.opt.showcmd = true
 vim.opt.cmdheight = 1
-vim.opt.laststatus = 0
+vim.opt.laststatus = 3
 vim.opt.inccommand = "split"
 vim.opt.ignorecase = true
 vim.opt.smarttab = true
@@ -68,5 +69,7 @@ vim.filetype.add({
 	},
 	filename = {
 		["project.godot"] = "godot",
+		["go.mod"] = "gomod",
+		["go.sum"] = "gosum",
 	},
 })

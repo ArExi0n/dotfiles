@@ -8,7 +8,38 @@ return {
 		config = function()
 			require("lualine").setup({
 				options = {
-					theme = "auto",
+					theme = {
+						normal = {
+							a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+							b = { bg = "#101010", fg = "#b0b0b0" },
+							c = { bg = "#101010", fg = "#b0b0b0" },
+						},
+						insert = {
+							a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+							b = { bg = "#101010", fg = "#b0b0b0" },
+							c = { bg = "#101010", fg = "#b0b0b0" },
+						},
+						visual = {
+							a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+							b = { bg = "#101010", fg = "#b0b0b0" },
+							c = { bg = "#101010", fg = "#b0b0b0" },
+						},
+						replace = {
+							a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+							b = { bg = "#101010", fg = "#b0b0b0" },
+							c = { bg = "#101010", fg = "#b0b0b0" },
+						},
+						command = {
+							a = { bg = "#101010", fg = "#b0b0b0", gui = "bold" },
+							b = { bg = "#101010", fg = "#b0b0b0" },
+							c = { bg = "#101010", fg = "#b0b0b0" },
+						},
+						inactive = {
+							a = { bg = "#101010", fg = "#474747" },
+							b = { bg = "#101010", fg = "#474747" },
+							c = { bg = "#101010", fg = "#474747" },
+						},
+					},
 					component_separators = { left = "", right = "" },
 					section_separators = { left = "", right = "" },
 				},

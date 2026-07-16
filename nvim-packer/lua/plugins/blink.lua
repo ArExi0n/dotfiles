@@ -1,6 +1,9 @@
 return {
 	{
 		"saghen/blink.cmp",
+		run = function()
+			require("blink.cmp").build():pwait()
+		end,
 		requires = {
 			"L3MON4D3/LuaSnip",
 			"rafamadriz/friendly-snippets",

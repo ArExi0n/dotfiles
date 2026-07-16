@@ -1,7 +1,6 @@
 return {
 	{
 		"nvim-telescope/telescope.nvim",
-		tag = "0.1.5",
 		requires = {
 			"nvim-lua/plenary.nvim",
 			{ "nvim-telescope/telescope-fzf-native.nvim", run = "make" },
@@ -10,7 +9,6 @@ return {
 		config = function()
 			local telescope = require("telescope")
 			local actions = require("telescope.actions")
-			local fb_actions = telescope.extensions.file_browser.actions
 
 			telescope.setup({
 				defaults = {
@@ -68,8 +66,12 @@ return {
 						hijack_netrw = true,
 						mappings = {
 							n = {
-								["N"] = fb_actions.create,
-								["h"] = fb_actions.goto_parent_dir,
+								["N"] = function(buf)
+									require("telescope").extensions.file_browser.actions.create(buf)
+								end,
+								["h"] = function(buf)
+									require("telescope").extensions.file_browser.actions.goto_parent_dir(buf)
+								end,
 								["<C-u>"] = function(buf)
 									for _ = 1, 10 do
 										actions.move_selection_previous(buf)
@@ -124,6 +126,10 @@ return {
 			vim.keymap.set("n", ";;", function()
 				require("telescope.builtin").resume()
 			end, { desc = "Resume picker" })
+
+			vim.keymap.set("n", "<leader>fr", function()
+				require("telescope.builtin").oldfiles()
+			end, { desc = "Recent files" })
 
 			vim.keymap.set("n", ";e", function()
 				require("telescope.builtin").diagnostics()

@@ -1,12 +1,14 @@
 local M = {}
 
-M.capabilities = vim.lsp.protocol.make_client_capabilities()
-
-local ok, blink = pcall(require, "blink.cmp")
-if ok then
-	M.capabilities = blink.get_lsp_capabilities(M.capabilities)
+function M.get_capabilities()
+	local capabilities = vim.lsp.protocol.make_client_capabilities()
+	local ok, blink = pcall(require, "blink.cmp")
+	if ok then
+		capabilities = blink.get_lsp_capabilities(capabilities)
+	end
+	capabilities.textDocument.completion.completionItem.snippetSupport = true
+	return capabilities
 end
-M.capabilities.textDocument.completion.completionItem.snippetSupport = true
 
 M.servers = {
 	ts_ls = {
@@ -175,11 +177,12 @@ M.servers = {
 }
 
 function M.setup()
+	local capabilities = M.get_capabilities()
 	for server_name, server_opts in pairs(M.servers) do
 		if server_name ~= "sourcekit" then
 			server_opts = vim.tbl_deep_extend("force", {}, server_opts)
 			server_opts.capabilities =
-				vim.tbl_deep_extend("force", {}, M.capabilities, server_opts.capabilities or {})
+				vim.tbl_deep_extend("force", {}, capabilities, server_opts.capabilities or {})
 			local ok, err = pcall(function()
 				require("lspconfig")[server_name].setup(server_opts)
 			end)
@@ -190,7 +193,7 @@ function M.setup()
 	end
 
 	local sk_opts = vim.tbl_deep_extend("force", M.servers.sourcekit or {}, {
-		capabilities = M.capabilities,
+		capabilities = capabilities,
 	})
 	local ok, err = pcall(function()
 		require("lspconfig").sourcekit.setup(sk_opts)

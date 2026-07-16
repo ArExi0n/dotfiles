@@ -57,6 +57,22 @@ local function apply(name, opts)
 	vim.api.nvim_set_hl(0, "SignColumn", { bg = "NONE" })
 	vim.api.nvim_set_hl(0, "LineNr", { bg = "NONE" })
 	vim.api.nvim_set_hl(0, "CursorLineNr", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "NonText", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "FoldColumn", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "Pmenu", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "PmenuBorder", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "PmenuSbar", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "PmenuThumb", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "BlinkCmpMenu", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "BlinkCmpMenuBorder", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "BlinkCmpScrollBarThumb", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "BlinkCmpScrollBarGutter", { bg = "NONE" })
+
+	local diag_signs = { "Error", "Warn", "Info", "Hint" }
+	for _, sev in ipairs(diag_signs) do
+		vim.api.nvim_set_hl(0, "DiagnosticSign" .. sev, { bg = "NONE" })
+		vim.api.nvim_set_hl(0, "DiagnosticVirtualText" .. sev, { bg = "NONE" })
+	end
 
 	if name:match("^koda") then
 		pcall(require("config.monochrome").apply)
