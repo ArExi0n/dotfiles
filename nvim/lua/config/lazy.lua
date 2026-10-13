@@ -27,14 +27,9 @@ require("lazy").setup({
 		},
 		{ import = "lazyvim.plugins.extras.ui.alpha" },
 		{ import = "lazyvim.plugins.extras.lang.rust" },
-		{ import = "lazyvim.plugins.extras.linting.eslint" },
 		{ import = "lazyvim.plugins.extras.formatting.prettier" },
-		{ import = "lazyvim.plugins.extras.lang.typescript" },
-		{ import = "lazyvim.plugins.extras.lang.json" },
-		{ import = "lazyvim.plugins.extras.lang.tailwind" },
 		{ import = "lazyvim.plugins.extras.coding.blink" },
 		{ import = "lazyvim.plugins.extras.util.mini-hipatterns" },
-		{ "folke/noice.nvim", enabled = false },
 		{ import = "plugins" },
 	},
 	defaults = {
@@ -61,3 +56,7 @@ require("lazy").setup({
 	},
 	debug = false,
 })
+
+-- Override LazyVim defaults (LazyVim's config/options.lua sets wrap=false, smoothscroll=true)
+vim.opt.wrap = true
+vim.opt.smoothscroll = false

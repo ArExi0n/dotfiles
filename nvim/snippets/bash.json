@@ -71,9 +71,5 @@
     "prefix": "heredoc",
     "body": "cat << ${1:EOF}\n$0\n${1:EOF}",
     "description": "Here document"
-  },
-  "Comments": {
-    "prefix": "comm",
-    "body": "# $0"
   }
 }

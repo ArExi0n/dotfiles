@@ -1,0 +1,1 @@
+/Users/ansh/.config/nvim/lua/config/obsidian.lua

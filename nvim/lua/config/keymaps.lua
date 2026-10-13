@@ -31,7 +31,6 @@ vim.keymap.set("n", "<C-h>", "<Cmd>bprev<CR>", { desc = "Prev buffer" })
 vim.keymap.set("n", "[b", "<Cmd>bprev<CR>", { desc = "Prev buffer" })
 vim.keymap.set("n", "]b", "<Cmd>bnext<CR>", { desc = "Next buffer" })
 
-
 -- Oil toggle
 vim.keymap.set("n", "<leader>e", function()
 	if vim.bo.filetype == "oil" then
@@ -44,7 +43,9 @@ vim.keymap.set("n", "<leader>e", function()
 	else
 		vim.g.oil_prev_buf = vim.api.nvim_get_current_buf()
 		local dir = vim.fn.expand("%:p:h")
-		if dir == "" then dir = vim.fn.getcwd() end
+		if dir == "" then
+			dir = vim.fn.getcwd()
+		end
 		require("oil").open(dir)
 	end
 end, { desc = "Toggle file explorer" })
@@ -53,13 +54,24 @@ end, { desc = "Toggle file explorer" })
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
+-- my keypreferences for word motion
+vim.keymap.set("n", "vw", "viw")
+vim.keymap.set("n", "dw", "diw")
+vim.keymap.set("n", "yw", "yiw")
+vim.keymap.set("n", "vb", "vie")
+vim.keymap.set("n", "db", "die")
+vim.keymap.set("n", "yb", "yie")
+vim.keymap.set("n", "vW", "viW")
+vim.keymap.set("n", "dW", "diW")
+vim.keymap.set("n", "yW", "yiW")
+vim.keymap.set("n", "L", "G")
+
 -- tab management
 vim.keymap.set("n", "<Tab>", "<cmd>BufferLineCycleNext<CR>", { desc = "Go to next buffer" })
 vim.keymap.set("n", "<S-Tab>", "<cmd>BufferLineCyclePrev<CR>", { desc = "Go to previous buffer" })
 vim.keymap.set("n", "<leader>x", "<cmd>bdelete<CR>", { desc = "Close current buffer" })
 vim.keymap.set("n", "<leader>n", "<cmd>tabnew<CR>", { desc = "New tab" })
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
-
 
 -- Plenary test
 vim.api.nvim_set_keymap("n", "<leader>tf", "<Plug>PlenaryTestFile", { noremap = false, silent = false })
@@ -98,8 +110,10 @@ vim.keymap.set("n", "E", "e", { desc = "Forward to end of word" })
 vim.keymap.set("n", "a", "A", { desc = "Append at end of line" })
 vim.keymap.set("n", "A", "a", { desc = "Append after cursor" })
 
--- Better escape
-vim.keymap.set("i", "<C-c>", "<Esc>")
+-- Better quit
+vim.keymap.set("n", "<C-c>", function()
+	vim.cmd("wqa")
+end)
 
 -- Disable Ex mode
 vim.keymap.set("n", "Q", "<nop>")
@@ -116,6 +130,22 @@ vim.keymap.set("n", "<leader>k", "<cmd>lnext<CR>zz", { desc = "Next location" })
 vim.keymap.set("n", "<leader>j", "<cmd>lprev<CR>zz", { desc = "Previous location" })
 vim.keymap.set("n", "<leader>tt", "<cmd>Trouble quickfix toggle<cr>", { desc = "Toggle trouble quickfix" })
 vim.keymap.set("n", "<leader>qx", "<cmd>Telescope quickfix<cr>", { desc = "Show quickfix list" })
+vim.keymap.set("n", "<leader>qe", function()
+	vim.diagnostic.setqflist({ open = false })
+	vim.notify("Quickfix: buffer diagnostics", vim.log.levels.INFO)
+end, { desc = "Buffer diagnostics to quickfix" })
+
+-- Fallbacks for buffers with no LSP attached (the real buffer-local maps are
+-- created on LspAttach and take precedence): say so instead of doing nothing.
+for lhs, what in pairs({ ["<leader>qf"] = "quick fix", ["<leader>vi"] = "fix imports" }) do
+	vim.keymap.set("n", lhs, function()
+		if #vim.lsp.get_clients({ bufnr = 0 }) == 0 then
+			vim.notify("No LSP attached here — " .. what .. " unavailable", vim.log.levels.WARN)
+		else
+			vim.notify("LSP attached but buffer maps not ready — reopen the file", vim.log.levels.WARN)
+		end
+	end, { desc = "LSP: " .. what .. " (no LSP attached)" })
+end
 
 -- Replace word under cursor (whole file) — prompts for replacement word
 vim.keymap.set("n", "<leader>s", function()
@@ -174,73 +204,123 @@ vim.keymap.set(
 
 -- Toggle AI providers independently
 local ai_state = {
-  copilot = true,
-  supermaven = true,
+	copilot = true,
+	supermaven = true,
 }
 vim.keymap.set("n", "<leader>aid", function()
-  local label = function(name, enabled)
-    return (enabled and "[x] " or "[ ] ") .. name
-  end
-  local items = {
-    { label = label("Copilot", ai_state.copilot), key = "copilot" },
-    { label = label("Supermaven", ai_state.supermaven), key = "supermaven" },
-    { label = "---", key = "sep" },
-    { label = "Enable all", key = "enable_all" },
-    { label = "Disable all", key = "disable_all" },
-  }
-  vim.ui.select(items, {
-    prompt = "AI providers:",
-    format_item = function(item) return item.label end,
-  }, function(choice)
-    if not choice then return end
-    local function set_copilot(on)
-      pcall(function()
-        if on then require("copilot.suggestion").enable() else require("copilot.suggestion").disable() end
-      end)
-      ai_state.copilot = on
-    end
-    local function set_supermaven(on)
-      pcall(function()
-        if on then require("supermaven-nvim.api").start() else require("supermaven-nvim.api").stop() end
-      end)
-      ai_state.supermaven = on
-    end
-    if choice.key == "copilot" then
-      set_copilot(not ai_state.copilot)
-    elseif choice.key == "supermaven" then
-      set_supermaven(not ai_state.supermaven)
-    elseif choice.key == "enable_all" then
-      set_copilot(true); set_supermaven(true)
-    elseif choice.key == "disable_all" then
-      set_copilot(false); set_supermaven(false)
-    end
-    vim.notify(string.format("Copilot: %s, Supermaven: %s",
-      ai_state.copilot and "on" or "off",
-      ai_state.supermaven and "on" or "off"), vim.log.levels.INFO)
-  end)
+	local label = function(name, enabled)
+		return (enabled and "[x] " or "[ ] ") .. name
+	end
+	local items = {
+		{ label = label("Copilot", ai_state.copilot), key = "copilot" },
+		{ label = label("Supermaven", ai_state.supermaven), key = "supermaven" },
+		{ label = "---", key = "sep" },
+		{ label = "Enable all", key = "enable_all" },
+		{ label = "Disable all", key = "disable_all" },
+	}
+	vim.ui.select(items, {
+		prompt = "AI providers:",
+		format_item = function(item)
+			return item.label
+		end,
+	}, function(choice)
+		if not choice then
+			return
+		end
+		local function set_copilot(on)
+			-- copilot.suggestion has no enable()/disable() — the real API is
+			-- copilot.command (same as :Copilot enable / :Copilot disable)
+			local ok, err = pcall(vim.cmd, "Copilot " .. (on and "enable" or "disable"))
+			if not ok then
+				vim.notify("Copilot toggle failed: " .. tostring(err), vim.log.levels.ERROR)
+			end
+			ai_state.copilot = on
+		end
+		local function set_supermaven(on)
+			local ok, err = pcall(function()
+				if on then
+					require("supermaven-nvim.api").start()
+				else
+					require("supermaven-nvim.api").stop()
+				end
+			end)
+			if not ok then
+				vim.notify("Supermaven toggle failed: " .. tostring(err), vim.log.levels.ERROR)
+			end
+			ai_state.supermaven = on
+		end
+		if choice.key == "copilot" then
+			set_copilot(not ai_state.copilot)
+		elseif choice.key == "supermaven" then
+			set_supermaven(not ai_state.supermaven)
+		elseif choice.key == "enable_all" then
+			set_copilot(true)
+			set_supermaven(true)
+		elseif choice.key == "disable_all" then
+			set_copilot(false)
+			set_supermaven(false)
+		end
+		vim.notify(
+			string.format(
+				"Copilot: %s, Supermaven: %s",
+				ai_state.copilot and "on" or "off",
+				ai_state.supermaven and "on" or "off"
+			),
+			vim.log.levels.INFO
+		)
+	end)
 end, { desc = "Toggle AI provider(s)" })
 
 -- ========================
 -- LSP KEYMAPS
 -- ========================
-vim.keymap.set("n", "gd", function() vim.diagnostic.open_float() end, { desc = "Line diagnostics" })
-vim.keymap.set("n", "<leader>gd", function() vim.lsp.buf.definition() end, { desc = "Go to definition" })
-vim.keymap.set("n", "gD", function() vim.lsp.buf.declaration() end, { desc = "Go to declaration" })
-vim.keymap.set("n", "gi", function() vim.lsp.buf.implementation() end, { desc = "Go to implementation" })
-vim.keymap.set("n", "gr", function() vim.lsp.buf.references() end, { desc = "References" })
-vim.keymap.set("n", "H", function() vim.lsp.buf.hover() end, { desc = "Hover documentation" })
+vim.keymap.set("n", "gd", function()
+	vim.diagnostic.open_float()
+end, { desc = "Line diagnostics" })
+vim.keymap.set("n", "<leader>gd", function()
+	vim.lsp.buf.definition()
+end, { desc = "Go to definition" })
+vim.keymap.set("n", "gD", function()
+	vim.lsp.buf.declaration()
+end, { desc = "Go to declaration" })
+vim.keymap.set("n", "gi", function()
+	vim.lsp.buf.implementation()
+end, { desc = "Go to implementation" })
+vim.keymap.set("n", "gr", function()
+	vim.lsp.buf.references()
+end, { desc = "References" })
+vim.keymap.set("n", "H", function()
+	vim.lsp.buf.hover()
+end, { desc = "Hover documentation" })
 vim.keymap.set("n", "<leader>vws", function()
 	require("telescope.builtin").lsp_workspace_symbols()
 end, { desc = "Workspace symbols" })
-vim.keymap.set("n", "[d", function() vim.diagnostic.goto_prev() end, { desc = "Previous diagnostic" })
-vim.keymap.set("n", "]d", function() vim.diagnostic.goto_next() end, { desc = "Next diagnostic" })
-vim.keymap.set("n", "<leader>vca", function() vim.lsp.buf.code_action() end, { desc = "Code action" })
-vim.keymap.set("n", "<leader>vrr", function() vim.lsp.buf.references() end, { desc = "References" })
-vim.keymap.set("n", "<leader>vrn", function() vim.lsp.buf.rename() end, { desc = "Rename symbol" })
-vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, { desc = "Signature help" })
+vim.keymap.set("n", "[d", function()
+	vim.diagnostic.goto_prev()
+end, { desc = "Previous diagnostic" })
+vim.keymap.set("n", "]d", function()
+	vim.diagnostic.goto_next()
+end, { desc = "Next diagnostic" })
+vim.keymap.set("n", "<leader>vca", function()
+	vim.lsp.buf.code_action()
+end, { desc = "Code action" })
+vim.keymap.set("n", "<leader>vrr", function()
+	vim.lsp.buf.references()
+end, { desc = "References" })
+vim.keymap.set("n", "<leader>vrn", function()
+	vim.lsp.buf.rename()
+end, { desc = "Rename symbol" })
+vim.keymap.set("i", "<C-h>", function()
+	vim.lsp.buf.signature_help()
+end, { desc = "Signature help" })
 
 vim.keymap.set("n", "<leader>f", function()
-	vim.lsp.buf.format({ async = true })
+	local ok, err = pcall(function()
+		require("conform").format({ async = true, lsp_fallback = true })
+	end)
+	if not ok then
+		vim.notify("Format failed: " .. tostring(err), vim.log.levels.ERROR)
+	end
 end, { desc = "Format buffer" })
 
 -- Cellular automaton
@@ -252,8 +332,6 @@ end, { desc = "Make it rain" })
 vim.keymap.set("n", "<leader><leader>", function()
 	vim.cmd("so")
 end, { desc = "Reload config" })
-
-
 
 local function tinymist_cmd(cmd, args)
 	local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
@@ -390,6 +468,26 @@ vim.keymap.set("n", "<leader>ou", new_obsidian_note("Uni", "uni-note.md", "Note 
 -- ========================
 -- USER COMMANDS
 -- ========================
+
+-- Fix shift-key typos: :W acts like :w, :Wqa like :wqa, etc. (supports ! and file args)
+for alias, cmd in pairs({
+	W = "w",
+	Wq = "wq",
+	WQ = "wq",
+	Wa = "wa",
+	WA = "wa",
+	Wqa = "wqa",
+	WQa = "wqa",
+	Q = "q",
+	Qa = "qa",
+	QA = "qa",
+}) do
+	vim.api.nvim_create_user_command(alias, function(opts)
+		local suffix = (opts.bang and "!" or "") .. (opts.args ~= "" and " " .. opts.args or "")
+		vim.cmd(cmd .. suffix)
+	end, { bang = true, nargs = "*", complete = "file", desc = "Alias for :" .. cmd })
+end
+
 vim.api.nvim_create_user_command("Bookshelf", function()
 	require("config.bookshelf").picker()
 end, { desc = "Browse bookshelf" })
@@ -437,3 +535,16 @@ vim.keymap.set("n", "<leader>bd", function()
 		end
 	end)
 end, { desc = "Bookshelf: edit book description" })
+
+-- ========================
+-- TYPST TEMPLATE (vault: Extra/Template/typst.typ)
+-- ========================
+-- <leader>ot (ObsidianTemplate picker) now also loads in typst buffers (see
+-- lua/plugins/obsidian.lua ft) so typst.typ is selectable there.
+-- The helpers below make the same template available without the picker:
+--   :TypstTemplate   insert template at cursor
+--   :r typst.typ     literal read works from any cwd (cmdline abbrev)
+--   new *.typ file   auto-prefilled via BufNewFile
+pcall(function()
+	require("config.obsidian").setup_typst_template()
+end)

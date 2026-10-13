@@ -10,7 +10,6 @@ return {
 				"json-lsp",
 				"tailwindcss-language-server",
 				"bash-language-server",
-				"rust-analyzer",
 				"gopls",
 				"css-lsp",
 				"html-lsp",
@@ -29,35 +28,54 @@ return {
 				"ktlint",
 				"taplo",
 				"rubocop",
+				"pyright",
 			})
 		end,
 		config = function(_, opts)
 			require("mason").setup(opts)
 			local mr = require("mason-registry")
-			mr:on("package:install:success", function()
-				vim.defer_fn(function()
-					require("lazy.core.handler.event").trigger({
-						event = "FileType",
-						buf = vim.api.nvim_get_current_buf(),
-					})
-				end, 100)
-			end)
 			mr.refresh(function()
-				local function install_tools(idx)
-					if idx > #opts.ensure_installed then return end
-					local p = mr.get_package(opts.ensure_installed[idx])
+				local to_install = {}
+				for _, name in ipairs(opts.ensure_installed) do
+					local p = mr.get_package(name)
 					if not p:is_installed() then
-						local ok, err = pcall(p.install, p)
-						if not ok then
-							vim.schedule(function()
-								install_tools(idx + 1)
-							end)
-						end
-					else
-						install_tools(idx + 1)
+						table.insert(to_install, p)
 					end
 				end
-				install_tools(1)
+				if #to_install == 0 then
+					return
+				end
+				vim.notify(
+					string.format("Mason: installing %d missing package(s)…", #to_install),
+					vim.log.levels.INFO
+				)
+				local installed = 0
+				local total = #to_install
+				local function install_next(idx)
+					if idx > #to_install then
+						vim.notify(
+							string.format("Mason: %d/%d packages installed successfully", installed, total),
+							vim.log.levels.INFO
+						)
+						vim.defer_fn(function()
+							require("lazy.core.handler.event").trigger({
+								event = "FileType",
+								buf = vim.api.nvim_get_current_buf(),
+							})
+						end, 100)
+						return
+					end
+					local p = to_install[idx]
+					p:install():once("closed", function()
+						if p:is_installed() then
+							installed = installed + 1
+						else
+							vim.notify("Mason: failed to install " .. p.name, vim.log.levels.WARN)
+						end
+						install_next(idx + 1)
+					end)
+				end
+				install_next(1)
 			end)
 		end,
 	},
@@ -144,11 +162,15 @@ return {
 					root_dir = function(filename)
 						local util = require("lspconfig.util")
 						local root = util.root_pattern("buildServer.json", "Package.swift")(filename)
-						if root then return root end
+						if root then
+							return root
+						end
 						local dir = vim.fs.dirname(filename)
 						while dir and dir ~= "/" do
 							for entry, type in vim.fs.dir(dir) do
-								if type == "directory" and (entry:find("%.xcodeproj$") or entry:find("%.xcworkspace$")) then
+								if
+									type == "directory" and (entry:find("%.xcodeproj$") or entry:find("%.xcworkspace$"))
+								then
 									return dir
 								end
 							end
@@ -220,24 +242,34 @@ return {
 					},
 				},
 
-				rust_analyzer = false,
-
 				gopls = {
 					autostart = true,
 					settings = {
 						gopls = {
-							analyses = { unusedparams = true },
-							staticcheck = true,
 							gofumpt = true,
+							ui = {
+								diagnostic = {
+									staticcheck = true,
+									analyses = { unusedparams = true },
+								},
+							},
 						},
 					},
 				},
 
+				-- rust_analyzer is intentionally NOT configured here:
+				-- rustaceanvim (lazyvim.plugins.extras.lang.rust) manages it.
+				-- Setting it up via lspconfig too would attach a second
+				-- rust-analyzer client -> duplicate hints/definitions/diagnostics.
+
+				-- bacon_ls is disabled - rustaceanvim manages rust-analyzer
+				bacon_ls = { enabled = false },
+
 				clangd = {
 					autostart = true,
 					cmd = {
-				"clangd",
-				"xcode-build-server",
+						"clangd",
+						"xcode-build-server",
 						"--background-index",
 						"--clang-tidy",
 						"--header-insertion=iwyu",
@@ -268,9 +300,15 @@ return {
 						local function notify(cmd, args)
 							client:exec_cmd({ command = cmd, arguments = args }, { bufnr = bufnr }, function(err, res)
 								if err then
-									vim.notify(string.format("tinymist: %s — %s", cmd, err.message), vim.log.levels.ERROR)
+									vim.notify(
+										string.format("tinymist: %s — %s", cmd, err.message),
+										vim.log.levels.ERROR
+									)
 								else
-									vim.notify(string.format("tinymist: %s — %s", cmd, vim.inspect(res)), vim.log.levels.INFO)
+									vim.notify(
+										string.format("tinymist: %s — %s", cmd, vim.inspect(res)),
+										vim.log.levels.INFO
+									)
 								end
 							end)
 						end
@@ -292,6 +330,72 @@ return {
 						end, { buffer = bufnr, desc = "Typst: open in sioyek" })
 					end,
 				},
+
+				pyright = {
+					autostart = true,
+					single_file_support = true,
+					root_dir = function(...)
+						return require("lspconfig.util").root_pattern(
+							"pyproject.toml",
+							"setup.py",
+							"setup.cfg",
+							"requirements.txt",
+							".git"
+						)(...) or vim.fn.getcwd()
+					end,
+					settings = {
+						python = {
+							analysis = {
+								autoSearchPaths = true,
+								diagnosticMode = "workspace",
+								useLibraryCodeForTypes = true,
+								typeCheckingMode = "basic",
+								reportWildcardImportFromLibrary = "none",
+								reportMissingTypeStubs = "none",
+								reportMissingImports = "warning",
+								reportUnusedImport = "warning",
+								reportUntypedBaseClass = "none",
+								reportUnknownArgumentType = "none",
+								reportUnknownMemberType = "none",
+								reportUnknownVariableType = "none",
+								reportUnknownParameterType = "none",
+								reportUnknownLambdaType = "none",
+								reportCallIssue = "none",
+								reportAttributeAccessIssue = "none",
+								reportArgumentType = "none",
+								reportOperatorIssue = "none",
+								reportOptionalIterable = "none",
+								reportOptionalMemberAccess = "none",
+								reportPrivateUsage = "none",
+							},
+						},
+					},
+					on_new_config = function(config, root_dir)
+						config.settings = config.settings or {}
+						config.settings.python = config.settings.python or {}
+						local candidates = {
+							root_dir .. "/.venv/bin/python",
+							root_dir .. "/venv/bin/python",
+						}
+						for _, py in ipairs(candidates) do
+							if vim.uv.fs_stat(py) then
+								config.settings.python.pythonPath = py
+								config.settings.python.venvPath = root_dir
+								config.settings.python.venv = vim.fs.basename(vim.fs.dirname(py))
+								break
+							end
+						end
+						if not config.settings.python.pythonPath then
+							config.settings.python.pythonPath = vim.fn.exepath("python3") or "/usr/bin/python3"
+						end
+					end,
+					on_attach = function(_, bufnr)
+						vim.bo[bufnr].tabstop = 4
+						vim.bo[bufnr].shiftwidth = 4
+						vim.bo[bufnr].expandtab = true
+						vim.bo[bufnr].softtabstop = 4
+					end,
+				},
 			},
 
 			setup = {},
@@ -311,29 +415,30 @@ return {
 			require("neoconf").setup()
 
 			local ensure_installed = {}
-			for server, _ in pairs(opts.servers or {}) do
-				if server ~= "sourcekit" and server ~= "rust_analyzer" then
+			for server, server_opts in pairs(opts.servers or {}) do
+				if server ~= "sourcekit" and vim.tbl_get(server_opts, "enabled") ~= false then
 					table.insert(ensure_installed, server)
 				end
 			end
 
-      require("mason-lspconfig").setup({
-        ensure_installed = ensure_installed,
-        automatic_installation = true,
-        automatic_enable = { exclude = { "rust_analyzer" } },
-        handlers = {
-          function(server_name)
-            local server_opts = opts.servers[server_name]
-            if server_opts == false then return end
-            server_opts = server_opts or {}
-            server_opts.capabilities =							vim.tbl_deep_extend("force", {}, capabilities, server_opts.capabilities or {})
-            local ok, err = pcall(require("lspconfig")[server_name].setup, server_opts)
-            if not ok then
-              vim.notify(("Failed to setup %s: %s"):format(server_name, err), vim.log.levels.WARN)
-            end
-          end,
-        },
-      })
+			require("mason-lspconfig").setup({
+				ensure_installed = ensure_installed,
+				automatic_installation = true,
+				-- rust_analyzer is handled by rustaceanvim, not lspconfig,
+				-- otherwise two rust-analyzer clients attach to every buffer.
+				automatic_enable = { exclude = { "rust_analyzer", "bacon_ls" } },
+				handlers = {
+					function(server_name)
+						local server_opts = opts.servers[server_name] or {}
+						server_opts.capabilities =
+							vim.tbl_deep_extend("force", {}, capabilities, server_opts.capabilities or {})
+						local ok, err = pcall(require("lspconfig")[server_name].setup, server_opts)
+						if not ok then
+							vim.notify(("Failed to setup %s: %s"):format(server_name, err), vim.log.levels.WARN)
+						end
+					end,
+				},
+			})
 
 			-- Direct setup for sourcekit
 			local sk_opts = vim.tbl_deep_extend("force", opts.servers.sourcekit or {}, {
@@ -360,10 +465,13 @@ return {
 				local c = clients[1]
 				local root = c.config.root_dir or "N/A"
 				local has_build_server = vim.fn.filereadable(root .. "/buildServer.json") == 1
-				vim.notify(string.format(
-					"sourcekit-lsp: running\n  Root: %s\n  buildServer.json: %s",
-					root, has_build_server and "yes" or "no"
-				))
+				vim.notify(
+					string.format(
+						"sourcekit-lsp: running\n  Root: %s\n  buildServer.json: %s",
+						root,
+						has_build_server and "yes" or "no"
+					)
+				)
 			end, { desc = "Check sourcekit-lsp status" })
 
 			vim.api.nvim_create_autocmd("LspAttach", {
@@ -391,26 +499,132 @@ return {
 					end, "LSP: Line diagnostics")
 					map("n", "[d", vim.diagnostic.goto_prev, "LSP: Previous diagnostic")
 					map("n", "]d", vim.diagnostic.goto_next, "LSP: Next diagnostic")
-				map("n", "<leader>vca", vim.lsp.buf.code_action, "LSP: Code action")
+					map("n", "<leader>vca", vim.lsp.buf.code_action, "LSP: Code action")
+
+					-- Filtered code actions, without ever going silent: if the
+					-- server offers nothing of that kind here (e.g. missing
+					-- imports are `source.*`, not `quickfix`), say so and fall
+					-- back to the full action list instead of showing nothing.
+					local function filtered_code_action(only, empty_msg)
+					local bufnr = vim.api.nvim_get_current_buf()
+					local clients = vim.lsp.get_clients({ bufnr = bufnr })
+					if #clients == 0 then
+						vim.notify("No LSP client attached — no code actions available", vim.log.levels.WARN)
+						return
+					end
+					local params = vim.lsp.util.make_range_params(0, clients[1].offset_encoding or "utf-8")
+					params.context = {
+						only = only,
+						triggerKind = vim.lsp.protocol.CodeActionTriggerKind.Invoked,
+						diagnostics = vim.tbl_map(function(d)
+							return d.user_data and d.user_data.lsp or d
+						end, vim.diagnostic.get(bufnr)),
+					}
+					local function kind_wanted(kind)
+						if not kind then
+							return false
+						end
+						for _, o in ipairs(only) do
+							if kind == o or vim.startswith(kind, o .. ".") then
+								return true
+							end
+						end
+						return false
+					end
+					local function apply_action(action, client, ctx)
+						if action.edit then
+							vim.lsp.util.apply_workspace_edit(action.edit, client.offset_encoding)
+						end
+						local a_cmd = action.command
+						if a_cmd then
+							client:exec_cmd(type(a_cmd) == "table" and a_cmd or action, ctx)
+						end
+					end
+					local function on_user_choice(choice)
+						if not choice then
+							return
+						end
+						local client = assert(vim.lsp.get_client_by_id(choice.ctx.client_id))
+						local action = choice.action
+						local cbuf = assert(choice.ctx.bufnr, "Must have buffer number")
+						if type(action.title) == "string" and type(action.command) == "string" then
+							apply_action(action, client, choice.ctx)
+							return
+						end
+						if action.disabled then
+							vim.notify(action.disabled.reason, vim.log.levels.ERROR)
+							return
+						end
+						if not (action.edit and action.command) and client:supports_method("codeAction/resolve") then
+							client:request("codeAction/resolve", action, function(err, resolved)
+								if err then
+									if action.edit or action.command then
+										apply_action(action, client, choice.ctx)
+									else
+										vim.notify(err.code .. ": " .. err.message, vim.log.levels.ERROR)
+									end
+								else
+									apply_action(resolved, client, choice.ctx)
+								end
+							end, cbuf)
+						else
+							apply_action(action, client, choice.ctx)
+						end
+					end
+					local function format_item(item)
+						local title = item.action.title:gsub("\r\n", "\\r\\n"):gsub("\n", "\\n")
+						if item.action.disabled then
+							title = title .. " (disabled)"
+						end
+						if #vim.lsp.get_clients({ bufnr = item.ctx.bufnr }) == 1 then
+							return title
+						end
+						local source = assert(vim.lsp.get_client_by_id(item.ctx.client_id)).name
+						return ("%s [%s]"):format(title, source)
+					end
+					vim.lsp.buf_request_all(bufnr, "textDocument/codeAction", params, function(results)
+						local actions = {}
+						for _, r in pairs(results or {}) do
+							for _, action in pairs(r.result or {}) do
+								-- servers may ignore `only`; enforce it client-side
+								if kind_wanted(action.kind) then
+									table.insert(actions, { action = action, ctx = r.context })
+								end
+							end
+						end
+						if vim.tbl_isempty(actions) then
+							vim.notify(empty_msg, vim.log.levels.INFO)
+							vim.lsp.buf.code_action()
+							return
+						end
+						vim.ui.select(actions, {
+							prompt = "Code actions:",
+							kind = "codeaction",
+							format_item = format_item,
+						}, on_user_choice)
+					end)
+					end
+
 					map({ "n", "x" }, "<leader>qf", function()
-						vim.lsp.buf.code_action({ context = { only = { "quickfix" } } })
+					filtered_code_action({ "quickfix" }, "No quickfix actions here — showing all code actions")
 					end, "LSP: Quick fix")
-map("n", "<leader>vi", function()
-				local actions = vim.lsp.buf.code_action({
-					context = {
-						only = { "source.organizeImports", "source.addMissingImports", "source.fixAll" },
-					},
-				})
-				if not actions or vim.tbl_isempty(actions.result or {}) then
-					actions = vim.lsp.buf.code_action()
-				end
-			end, "LSP: Fix imports")
-				map("n", "<leader>vrr", vim.lsp.buf.references, "LSP: References")
+					map("n", "<leader>vi", function()
+					filtered_code_action(
+						{ "source.organizeImports", "source.addMissingImports", "source.fixAll" },
+						"No organize-imports actions from LSP — showing all code actions"
+					)
+					end, "LSP: Fix imports")
+					map("n", "<leader>vrr", vim.lsp.buf.references, "LSP: References")
 					map("n", "<leader>vrn", vim.lsp.buf.rename, "LSP: Rename")
 					map("i", "<C-h>", vim.lsp.buf.signature_help, "LSP: Signature help")
 					map("n", "<leader>f", function()
-						vim.lsp.buf.format({ async = true })
-					end, "LSP: Format")
+						local ok, err = pcall(function()
+							require("conform").format({ async = true, lsp_fallback = true })
+						end)
+						if not ok then
+							vim.notify("Format failed: " .. tostring(err), vim.log.levels.ERROR)
+						end
+					end, "Format buffer")
 
 					local sk = vim.lsp.get_clients({ bufnr = bufnr, name = "sourcekit" })
 					if #sk > 0 then
@@ -445,27 +659,32 @@ map("n", "<leader>vi", function()
 	},
 
 	{
+		-- rustaceanvim (from lazyvim.plugins.extras.lang.rust) is the single
+		-- owner of rust-analyzer. Keep rust-analyzer settings here.
+		"mrcjkb/rustaceanvim",
+		opts = {
+			server = {
+				default_settings = {
+					["rust-analyzer"] = {
+						check = { command = "check" },
+					},
+				},
+			},
+		},
+	},
+
+	{
 		"mfussenegger/nvim-lint",
-		event = { "BufReadPre", "BufNewFile" },
-		config = function()
-			local lint = require("lint")
-			lint.linters_by_ft = {
-				javascript = { "eslint" },
-				typescript = { "eslint" },
-				javascriptreact = { "eslint" },
-				typescriptreact = { "eslint" },
+		-- LazyVim's base linting.lua already sets this up with autocmds and debouncing.
+		-- We extend its opts instead of replacing the config to avoid double-firing.
+		opts = {
+			linters_by_ft = {
 				swift = { "swiftlint" },
 				lua = { "luacheck" },
 				sh = { "shellcheck" },
-			}
-			local group = vim.api.nvim_create_augroup("lint", { clear = true })
-			vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
-				group = group,
-				callback = function()
-					lint.try_lint()
-				end,
-			})
-		end,
+				python = { "ruff" },
+			},
+		},
 	},
 
 	{
@@ -494,9 +713,10 @@ map("n", "<leader>vi", function()
 				ruby = { "rubocop" },
 			},
 			format_on_save = {
-				timeout_ms = 500,
+				timeout_ms = 2000,
 				lsp_fallback = true,
 			},
+			notify_on_error = true,
 		},
 	},
 

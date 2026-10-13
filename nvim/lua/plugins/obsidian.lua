@@ -2,7 +2,7 @@ return {
 	"epwalsh/obsidian.nvim",
 	version = "*",
 	lazy = true,
-	ft = "markdown",
+	ft = { "markdown", "typst" },
 	cmd = {
 		"ObsidianBacklinks",
 		"ObsidianDailies",
@@ -39,7 +39,7 @@ return {
 	dependencies = {
 		"nvim-lua/plenary.nvim",
 		"nvim-telescope/telescope.nvim",
-		"hrsh7th/nvim-cmp",
+		{ "hrsh7th/nvim-cmp", optional = true },
 	},
 	init = function()
 		local group = vim.api.nvim_create_augroup("salar-obsidian-markdown", { clear = true })
@@ -58,5 +58,6 @@ return {
 	config = function(_, opts)
 		require("obsidian").setup(opts)
 		require("config.obsidian").patch_template_substitutions()
+		require("config.obsidian").setup_typst_template()
 	end,
 }

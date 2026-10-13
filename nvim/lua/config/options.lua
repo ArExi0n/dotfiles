@@ -2,6 +2,7 @@ vim.opt.guicursor = ""
 
 vim.opt.nu = true
 vim.opt.relativenumber = true
+vim.opt.numberwidth = 4
 
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
@@ -9,7 +10,8 @@ vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 
 vim.opt.smartindent = true
-vim.opt.wrap = false
+vim.opt.wrap = true
+vim.opt.linebreak = true
 
 vim.opt.swapfile = false
 vim.opt.backup = false
@@ -22,11 +24,13 @@ vim.opt.incsearch = true
 vim.opt.termguicolors = true
 
 vim.opt.scrolloff = 10
+vim.opt.sidescrolloff = 8
+vim.opt.sidescroll = 1
 vim.opt.smoothscroll = false
-vim.opt.signcolumn = "auto"
+vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 
-vim.opt.updatetime = 300
+vim.opt.updatetime = 500
 
 vim.opt.colorcolumn = "0"
 vim.g.mapleader = " "
@@ -40,12 +44,11 @@ vim.opt.title = true
 vim.opt.autoindent = true
 vim.opt.showcmd = true
 vim.opt.cmdheight = 1
-vim.opt.laststatus = 3
+vim.opt.laststatus = 0
 vim.opt.inccommand = "split"
 vim.opt.ignorecase = true
 vim.opt.smarttab = true
 vim.opt.breakindent = true
-vim.opt.wrap = false
 vim.opt.backspace = { "start", "eol", "indent" }
 vim.opt.path:append({ "**" })
 vim.opt.wildignore:append({ "*/node_modules/*" })
@@ -53,6 +56,7 @@ vim.opt.splitbelow = true
 vim.opt.splitright = true
 vim.opt.splitkeep = "cursor"
 vim.opt.cursorline = false
+vim.opt.list = false
 vim.opt.mouse = "a"
 vim.opt.formatoptions:append({ "r" })
 

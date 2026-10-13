@@ -28,6 +28,7 @@ local function close()
 end
 
 function M.update()
+
   local bufnr = vim.api.nvim_get_current_buf()
   local ft = vim.bo[bufnr].filetype
   if ft == "" or ft == "oil" or ft == "NvimTree" or ft == "neo-tree" then
