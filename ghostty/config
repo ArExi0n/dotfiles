@@ -1,0 +1,46 @@
+background = #000000
+foreground = #c8c8c8
+
+cursor-color = #c8c8c8
+cursor-style = bar
+
+selection-background = #3a3a3a
+selection-foreground = #ffffff
+
+font-family = JetBrainsMono Nerd Font
+font-size = 26
+font-feature = +liga
+
+window-padding-x = 12
+window-padding-y = 12
+window-theme = dark
+window-decoration = true
+
+macos-titlebar-style = hidden
+macos-option-as-alt = true
+
+copy-on-select = true
+confirm-close-surface = false
+shell-integration = zsh
+mouse-hide-while-typing = true
+resize-overlay = never
+
+palette = 0=#1c1c1c
+palette = 1=#777777
+palette = 2=#8a8a8a
+palette = 3=#9a9a9a
+palette = 4=#aaaaaa
+palette = 5=#bbbbbb
+palette = 6=#cccccc
+palette = 7=#dddddd
+
+palette = 8=#444444
+palette = 9=#888888
+palette = 10=#999999
+palette = 11=#aaaaaa
+palette = 12=#bbbbbb
+palette = 13=#cccccc
+palette = 14=#dddddd
+palette = 15=#ffffff
+
+keybind = super+f=text:\x00\x66

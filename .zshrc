@@ -4,6 +4,11 @@
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# Tmux by default session (only if not already in tmux)
+if [[ -z $TMUX ]]; then
+  tmux attach -t home 2>/dev/null || tmux new-session -s home
+fi
+
 # Themes ()
 
 ZSH_THEME="robbyrussell" # set by `omz`
@@ -55,12 +60,13 @@ source $ZSH/oh-my-zsh.sh
 
 . "$HOME/.local/bin/env"
 export PATH="$HOME/.avm/bin:$PATH"
-alias vim='nvim'
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 # Added by Antigravity
 export PATH="/Users/ansh/.antigravity/antigravity/bin:$PATH"
+
+export PATH="$(brew --prefix node@24)/bin:$PATH"
 
 # Added by Antigravity
 export PATH="/Users/ansh/.antigravity/antigravity/bin:$PATH"
@@ -82,11 +88,21 @@ plugins=(git zsh-syntax-highlighting zsh-autosuggestions)
 bindkey -e
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
-bindkey '^y' autosuggest-accept
+bindkey '^a' expand-or-complete
 bindkey '^[w' kill-region
-bindkey -s '^f' '^u~/.config/scripts/fzf-tmux.sh^M'
-
+bindkey -s '^f' '^u~/.config/scripts/tmux-session-dispensary.sh^M'
 
 # Mole shell completion
 if output="$(mole completion zsh 2>/dev/null)"; then eval "$output"; fi
-fastfetch
+
+# OpenClaw Completion
+[ -f "/Users/ansh/.openclaw/completions/openclaw.zsh" ] && source "/Users/ansh/.openclaw/completions/openclaw.zsh"
+
+# SYLVAN nvim (isolated config ~/.config/sylvan-nvim) — vim, vi, im
+# LazyVim normal nvim (config ~/.config/nvim) — plain `nvim`, no alias.
+alias vim='NVIM_APPNAME=sylvan-nvim nvim'
+alias vi='NVIM_APPNAME=sylvan-nvim nvim'
+alias im='NVIM_APPNAME=sylvan-nvim nvim'
+unalias nvim 2>/dev/null || true
+
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
