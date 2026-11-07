@@ -61,11 +61,11 @@ function M.apply()
 	hi("MatchParen", { bold = true })
 	hi("QuickFixLine", { bg = visual_bg })
 
-	-- Popup menu
-	hi("Pmenu", { bg = popup_bg })
-	hi("PmenuSel", { bg = select_bg })
-	hi("PmenuSbar", { bg = visual_bg })
-	hi("PmenuThumb", { bg = popup_bg })
+	-- Popup menu — transparent, no bg (suggestion block, like sylvan floats)
+	hi("Pmenu")
+	hi("PmenuSel", { bold = true })
+	hi("PmenuSbar")
+	hi("PmenuThumb")
 
 	-- Tabs / Status / Separators
 	hi("TabLine", { bg = popup_bg })

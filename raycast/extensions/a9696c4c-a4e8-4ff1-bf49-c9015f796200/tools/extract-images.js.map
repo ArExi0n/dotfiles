@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/tools/extract-images.ts"],
+  "sourcesContent": ["type Input = { markdown: string };\n\nexport default async function extractImages({ markdown }: Input) {\n  const images = new Map<string, { url: string; alt?: string; title?: string }>();\n  for (const match of markdown.matchAll(/!\\[([^\\]]*)\\]\\((\\S+?)(?:\\s+[\"']([^\"']*)[\"'])?\\)/g)) {\n    images.set(match[2], { url: match[2], alt: match[1] || undefined, title: match[3] || undefined });\n  }\n  for (const match of markdown.matchAll(/<img\\s+[^>]*src=[\"']([^\"']+)[\"'][^>]*>/gi)) {\n    const alt = match[0].match(/\\salt=[\"']([^\"']*)[\"']/i)?.[1];\n    images.set(match[1], { url: match[1], alt });\n  }\n  return [...images.values()];\n}\n"],
+  "mappings": "yaAAA,IAAAA,EAAA,GAAAC,EAAAD,EAAA,aAAAE,IAAA,eAAAC,EAAAH,GAEA,eAAOE,EAAqC,CAAE,SAAAE,CAAS,EAAU,CAC/D,IAAMC,EAAS,IAAI,IACnB,QAAWC,KAASF,EAAS,SAAS,kDAAkD,EACtFC,EAAO,IAAIC,EAAM,CAAC,EAAG,CAAE,IAAKA,EAAM,CAAC,EAAG,IAAKA,EAAM,CAAC,GAAK,OAAW,MAAOA,EAAM,CAAC,GAAK,MAAU,CAAC,EAElG,QAAWA,KAASF,EAAS,SAAS,0CAA0C,EAAG,CACjF,IAAMG,EAAMD,EAAM,CAAC,EAAE,MAAM,yBAAyB,IAAI,CAAC,EACzDD,EAAO,IAAIC,EAAM,CAAC,EAAG,CAAE,IAAKA,EAAM,CAAC,EAAG,IAAAC,CAAI,CAAC,CAC7C,CACA,MAAO,CAAC,GAAGF,EAAO,OAAO,CAAC,CAC5B",
+  "names": ["extract_images_exports", "__export", "extractImages", "__toCommonJS", "markdown", "images", "match", "alt"]
+}

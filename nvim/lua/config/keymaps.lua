@@ -1,17 +1,12 @@
+local vim = vim
+
 -- Set leader key
 vim.g.mapleader = " "
-
--- === No-arrow-key design ===
--- This config avoids arrow-key dependencies entirely.
---  • e / E  → end-of-line / end-of-word (instead of $ / e)
---  • <leader>w{hjkl} → window navigation & resizing
---  • <C-h/j/k/l>  → buffer prev/next, quickfix nav
---  • <C-j/k>  → completion menu (blink.cmp)
 
 -- Select current line
 vim.keymap.set("n", "vv", "V", { desc = "Select current line" })
 
--- Window navigation (no arrow keys needed — use leader+w + direction)
+-- Window navigation
 vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Window: go left" })
 vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Window: go down" })
 vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Window: go up" })
@@ -498,9 +493,7 @@ vim.api.nvim_create_user_command("BookshelfOpen", function(opts)
 	require("config.bookshelf").open_pdf_in_sioyek(opts.args)
 end, { nargs = 1, desc = "Open PDF in sioyek" })
 
--- ========================
 -- BOOKSHELF
--- ========================
 vim.keymap.set("n", "<leader>bb", function()
 	require("config.bookshelf").picker()
 end, { desc = "Bookshelf: browse books (Telescope)" })
@@ -537,13 +530,13 @@ vim.keymap.set("n", "<leader>bd", function()
 end, { desc = "Bookshelf: edit book description" })
 
 -- ========================
--- TYPST TEMPLATE (vault: Extra/Template/typst.typ)
+-- TYPST TEMPLATE (vault: Extra/Template/typst.typ — the "minimalism" template)
 -- ========================
 -- <leader>ot (ObsidianTemplate picker) now also loads in typst buffers (see
 -- lua/plugins/obsidian.lua ft) so typst.typ is selectable there.
 -- The helpers below make the same template available without the picker:
---   :TypstTemplate   insert template at cursor
---   :r typst.typ     literal read works from any cwd (cmdline abbrev)
+--   :Minimalism      insert template at cursor
+--   :r minimalism    literal read works from any cwd (cmdline rewrite)
 --   new *.typ file   auto-prefilled via BufNewFile
 pcall(function()
 	require("config.obsidian").setup_typst_template()

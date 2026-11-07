@@ -17,13 +17,12 @@ vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.showtabline = 2
 vim.opt.signcolumn = "yes"
-vim.opt.wrap = false
+vim.opt.wrap = true
+vim.opt.cursorline = false
 vim.opt.breakindent = true
 vim.opt.breakindentopt = { "shift:2", "min:20" }
 vim.opt.linebreak = true
 vim.opt.showbreak = ""
--- j/k move by screen line (glide through wrapped parts of the same long line).
--- With a count (e.g. 3j) they still move by real lines.
 vim.keymap.set({ "n", "x" }, "j", function()
 	return vim.v.count == 0 and "gj" or "j"
 end, { expr = true, desc = "Down (screen line)" })
@@ -66,14 +65,23 @@ vim.api.nvim_create_autocmd("VimEnter", {
 vim.opt.sessionoptions:append("options")
 local sylvan_ui_opts = { "wrap", "number", "relativenumber", "spell", "cursorline", "cursorcolumn", "list" }
 local sylvan_ui_state = vim.fs.joinpath(vim.fn.stdpath("state"), "sylvan-ui-opts.json")
-local function sylvan_save_ui_opts()
-	local data = {}
-	for _, name in ipairs(sylvan_ui_opts) do
-		local ok, val = pcall(vim.api.nvim_get_option_value, name, { scope = "global" })
-		if ok then
-			data[name] = val
-		end
+local sylvan_ui_ready = false -- true after VimEnter; only :set past this point is remembered
+local sylvan_ui_touched = {} -- any other option the user :set (tracked dynamically)
+local function sylvan_ui_put(data, name)
+	local ok, val = pcall(vim.api.nvim_get_option_value, name, { scope = "global" })
+	if ok then
+		data[name] = val
 	end
+end
+local function sylvan_save_ui_opts()
+	local data = { _touched = sylvan_ui_touched }
+	for _, name in ipairs(sylvan_ui_opts) do
+		sylvan_ui_put(data, name)
+	end
+	for _, name in ipairs(sylvan_ui_touched) do
+		sylvan_ui_put(data, name)
+	end
+	data.cmp_enabled = vim.g.sylvan_cmp_enabled ~= false
 	pcall(vim.fn.mkdir, vim.fs.dirname(sylvan_ui_state), "p")
 	pcall(vim.fn.writefile, { vim.json.encode(data) }, sylvan_ui_state)
 end
@@ -89,15 +97,35 @@ local function sylvan_load_ui_opts()
 	if not ok2 or type(data) ~= "table" then
 		return
 	end
-	for _, name in ipairs(sylvan_ui_opts) do
-		if data[name] ~= nil then
-			pcall(vim.api.nvim_set_option_value, name, data[name], { scope = "global" })
-			-- Window-local opts (wrap, number, ...) must also hit existing windows:
-			-- the global value alone doesn't change already-open windows.
-			for _, win in ipairs(vim.api.nvim_list_wins()) do
-				pcall(vim.api.nvim_set_option_value, name, data[name], { scope = "local", win = win })
+	for _, name in ipairs(data._touched or {}) do
+		if type(name) == "string" and not vim.tbl_contains(sylvan_ui_touched, name) then
+			table.insert(sylvan_ui_touched, name)
+		end
+	end
+	local function apply(name)
+		if data[name] == nil then
+			return
+		end
+		pcall(vim.api.nvim_set_option_value, name, data[name], { scope = "global" })
+		-- Window-local opts (wrap, number, ...) must also hit existing windows;
+		-- buffer-local opts (tabstop, ...) must hit existing buffers.
+		for _, win in ipairs(vim.api.nvim_list_wins()) do
+			pcall(vim.api.nvim_set_option_value, name, data[name], { scope = "local", win = win })
+		end
+		for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+			if vim.api.nvim_buf_is_valid(buf) then
+				pcall(vim.api.nvim_set_option_value, name, data[name], { scope = "local", buf = buf })
 			end
 		end
+	end
+	for _, name in ipairs(sylvan_ui_opts) do
+		apply(name)
+	end
+	for _, name in ipairs(sylvan_ui_touched) do
+		apply(name)
+	end
+	if data.cmp_enabled ~= nil then
+		vim.g.sylvan_cmp_enabled = data.cmp_enabled
 	end
 end
 sylvan_load_ui_opts()
@@ -107,15 +135,20 @@ vim.api.nvim_create_autocmd("VimEnter", {
 	group = sylvan_ui_group,
 	once = true,
 	callback = function()
+		sylvan_ui_ready = true
 		vim.schedule(sylvan_load_ui_opts)
 	end,
 })
 vim.api.nvim_create_autocmd("OptionSet", {
 	group = sylvan_ui_group,
 	callback = function(args)
-		if vim.tbl_contains(sylvan_ui_opts, args.match) then
-			sylvan_save_ui_opts()
+		if not sylvan_ui_ready or vim.v.option_type ~= "global" then
+			return
 		end
+		if not vim.tbl_contains(sylvan_ui_opts, args.match) and not vim.tbl_contains(sylvan_ui_touched, args.match) then
+			table.insert(sylvan_ui_touched, args.match)
+		end
+		sylvan_save_ui_opts()
 	end,
 })
 vim.api.nvim_create_autocmd({ "VimLeavePre", "FocusLost" }, {
@@ -371,6 +404,10 @@ local function sylvan_cmpl_next()
 		blink.select_next()
 		return
 	end
+	if vim.g.sylvan_cmp_enabled == false and ok and blink.show then
+		blink.show() -- OFF mode: C-j summons the menu, never snippet-jumps.
+		return
+	end
 	if vim.fn.pumvisible() == 1 then
 		sylvan_feed("<C-n>")
 	elseif require("luasnip").jumpable(1) then
@@ -387,6 +424,10 @@ local function sylvan_cmpl_prev()
 	local ok, blink = pcall(require, "blink.cmp")
 	if ok and blink.is_visible and blink.is_visible() then
 		blink.select_prev()
+		return
+	end
+	if vim.g.sylvan_cmp_enabled == false and ok and blink.show then
+		blink.show() -- OFF mode: C-k summons the menu, never snippet-jumps.
 		return
 	end
 	if vim.fn.pumvisible() == 1 then
@@ -620,9 +661,15 @@ vim.api.nvim_exec_autocmds("ColorScheme", { pattern = "everforest" })
 -- Transparent floats like main nvim: completion menu, notifications, hover boxes.
 local function sylvan_apply_transparent_floats()
 	for _, g in ipairs({
-		"NormalFloat", "FloatBorder", "FloatTitle",
-		"Pmenu", "PmenuSel", "PmenuSbar", "PmenuThumb",
-		"BlinkCmpMenu", "BlinkCmpDoc",
+		"NormalFloat",
+		"FloatBorder",
+		"FloatTitle",
+		"Pmenu",
+		"PmenuSel",
+		"PmenuSbar",
+		"PmenuThumb",
+		"BlinkCmpMenu",
+		"BlinkCmpDoc",
 		"NotifyBackground",
 	}) do
 		pcall(vim.api.nvim_set_hl, 0, g, { bg = "NONE" })
@@ -644,13 +691,20 @@ pcall(require("luasnip.loaders.from_vscode").lazy_load)
 -- Blink.cmp (same engine as main nvim, no AI): menu shows WHILE typing
 -- (show_on_keyword), not just after backspace. Sources mirror main nvim
 -- (lsp, path, snippets) + buffer so plain words also complete.
--- Toggle: <leader>tc flips vim.g.sylvan_cmp_enabled. Manual trigger: <C-Space>.
-vim.g.sylvan_cmp_enabled = true
+-- Toggle: <leader>tc flips vim.g.sylvan_cmp_enabled. ON = menu while typing;
+-- OFF = silent, Backspace or C-j/C-k summons it. Manual trigger: <C-Space>.
+-- Default on; kept when restored from state above.
+if vim.g.sylvan_cmp_enabled == nil then
+	vim.g.sylvan_cmp_enabled = true
+end
 pcall(function()
 	local blink = require("blink.cmp")
 	blink.setup({
+		-- Always on: <leader>tc quiets the *triggers* instead (see toggle below).
+		-- blink kills manual show() too when this returns false, so OFF mode
+		-- keeps it true and only flips show_on_* below.
 		enabled = function()
-			return vim.g.sylvan_cmp_enabled ~= false
+			return true
 		end,
 		snippets = { preset = "luasnip" },
 		sources = {
@@ -685,6 +739,26 @@ pcall(function()
 		},
 	})
 end)
+-- ON: menu pops while typing. OFF: silent while typing; Backspace or
+-- C-j/C-k summons it (blink reads this table live, setup runs once).
+local function sylvan_apply_cmp_mode()
+	local ok, cfg = pcall(require, "blink.cmp.config")
+	if not ok then
+		return
+	end
+	local trigger = cfg.completion.trigger
+	if vim.g.sylvan_cmp_enabled == false then
+		trigger.show_on_keyword = false
+		trigger.show_on_trigger_character = false
+		trigger.show_on_insert = false
+		trigger.show_on_backspace = true
+	else
+		trigger.show_on_keyword = true
+		trigger.show_on_trigger_character = true
+		trigger.show_on_insert = false
+		trigger.show_on_backspace = false
+	end
+end
 vim.keymap.set("n", "<leader>tc", function()
 	vim.g.sylvan_cmp_enabled = not vim.g.sylvan_cmp_enabled
 	if vim.g.sylvan_cmp_enabled then
@@ -693,9 +767,12 @@ vim.keymap.set("n", "<leader>tc", function()
 		pcall(function()
 			require("blink.cmp").hide()
 		end)
-		vim.notify("Completion: OFF", vim.log.levels.INFO)
+		vim.notify("Completion: OFF (Backspace or C-j/C-k summons it)", vim.log.levels.INFO)
 	end
+	sylvan_apply_cmp_mode()
+	sylvan_save_ui_opts()
 end, { desc = "Toggle completion suggestions" })
+sylvan_apply_cmp_mode() -- apply restored OFF state at startup
 
 -- ~/.config/nvim/init.lua
 
@@ -766,6 +843,8 @@ map({ "n", "x" }, "<leader>y", '"+y')
 map({ "i", "s" }, "<C-e>", function()
 	ls.expand_or_jump(1)
 end, { silent = true })
+-- Load custom template system
+require("template").setup()
 -- NOTE: <C-j>/<C-k> smart maps (pumvisible -> <C-n>/<C-p>, else luasnip)
 -- are defined near vim.lsp.completion setup AND re-applied after user_keymaps
 -- so they always win. Do not add luasnip-only <C-j>/<C-k> here.
@@ -1041,6 +1120,14 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("n", "gi", vim.lsp.buf.implementation, "LSP: Go to implementation")
 		map("n", "gr", vim.lsp.buf.references, "LSP: References")
 		map("n", "K", vim.lsp.buf.hover, "LSP: Hover")
+	map("n", "q", function()
+		for _, win in ipairs(vim.api.nvim_list_wins()) do
+			if vim.api.nvim_win_get_config(win).relative ~= "" then
+				vim.api.nvim_win_close(win, true)
+				return
+			end
+		end
+	end, "LSP: Close hover/docs float")
 		map("n", "<leader>vws", vim.lsp.buf.workspace_symbol, "LSP: Workspace symbol")
 		map("n", "<leader>vd", function()
 			vim.diagnostic.open_float(0, { scope = "line" })
@@ -1169,3 +1256,50 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("n", "<leader>f", builtin.find_files, "Find files")
 	end,
 })
+
+-- ========================
+-- BOOKSHELF
+-- ========================
+vim.api.nvim_create_user_command("Bookshelf", function()
+	require("config.bookshelf").picker()
+end, { desc = "Browse bookshelf" })
+vim.api.nvim_create_user_command("BookshelfRefresh", function()
+	require("config.bookshelf").generate_bookshelf()
+end, { desc = "Refresh bookshelf catalog" })
+vim.api.nvim_create_user_command("BookshelfOpen", function(opts)
+	require("config.bookshelf").open_pdf_in_sioyek(opts.args)
+end, { nargs = 1, desc = "Open PDF in sioyek" })
+
+vim.keymap.set("n", "<leader>bb", function()
+	require("config.bookshelf").picker()
+end, { desc = "Bookshelf: browse books (Telescope)" })
+vim.keymap.set("n", "<leader>bc", function()
+	require("config.bookshelf").generate_bookshelf()
+end, { desc = "Bookshelf: refresh catalog & covers" })
+vim.keymap.set("n", "<leader>bo", function()
+	require("config.bookshelf").open_pdf_under_cursor()
+end, { desc = "Bookshelf: open PDF under cursor" })
+vim.keymap.set("n", "<leader>bO", function()
+	require("config.bookshelf").open_pdf_in_sioyek(vim.fn.expand("%:p"))
+end, { desc = "Bookshelf: open current file in sioyek" })
+vim.keymap.set("n", "<leader>bm", "<cmd>e Books/Bookshelf.md<CR>", { desc = "Bookshelf: open markdown catalog" })
+
+vim.keymap.set("n", "<leader>bd", function()
+	local db = require("config.bookshelf").load_db()
+	if #db.books == 0 then
+		vim.notify("No books", vim.log.levels.INFO)
+		return
+	end
+	local items = vim.tbl_map(function(b)
+		return b.id .. "  (" .. b.name .. ")"
+	end, db.books)
+	vim.ui.select(items, { prompt = "Select book to describe:" }, function(choice)
+		if not choice then
+			return
+		end
+		local id = choice:match("^(%S+)")
+		if id then
+			require("config.bookshelf").set_description(id)
+		end
+	end)
+end, { desc = "Bookshelf: edit book description" })

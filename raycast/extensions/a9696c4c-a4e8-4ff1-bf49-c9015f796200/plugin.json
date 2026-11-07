@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "linear",
+  "description": "Bring Linear to every corner of your Mac. Create, search, and modify your issues. Stay on top of your notifications in the menu bar.",
+  "author": {
+    "name": "thomaslombart"
+  },
+  "license": "MIT"
+}

@@ -2,15 +2,15 @@
 cagent/
 configstore/
 fish/
-gh/
-github-copilot/
-iterm2/
-kitty/
-linearmouse/
 mpv/
 MyCLI/
 neonctl/
-opencode/
-raycast/
-solana/
-uv/
+everything-claude-code/
+
+# secrets - never commit
+github-copilot/
+gh/hosts.yml
+solana/id.json*
+*.key
+*.pem
+**/auth.db*

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "obsidian",
+  "description": "Control Obsidian with Raycast",
+  "author": {
+    "name": "marcjulian"
+  },
+  "license": "MIT",
+  "version": "1.0.3"
+}

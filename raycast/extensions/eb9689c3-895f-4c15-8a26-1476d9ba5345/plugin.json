@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "screenocr",
+  "description": "Extract text from screen captures and clipboard images locally via OCR",
+  "author": {
+    "name": "huzef44"
+  },
+  "license": "MIT"
+}
