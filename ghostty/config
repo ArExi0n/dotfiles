@@ -1,15 +1,16 @@
-background = #000000
+background = #002b36
 background-opacity = 0.65
-foreground = #c8c8c8
+foreground = #839496
 
 term = xterm-256color
 
-cursor-color = #c8c8c8
+cursor-color = #839496
+cursor-text = #002b36
 cursor-style = block
 cursor-style-blink = false
 
-selection-background = #3a3a3a
-selection-foreground = #ffffff
+selection-background = #839496
+selection-foreground = #002b36
 
 font-family = JetBrainsMonoNL Nerd Font Mono
 font-size = 26
@@ -29,22 +30,22 @@ shell-integration = zsh
 mouse-hide-while-typing = true
 resize-overlay = never
 
-palette = 0=#242424
-palette = 1=#f62b5a
-palette = 2=#47b413
-palette = 3=#e3c401
-palette = 4=#24acd4
-palette = 5=#f2affd
-palette = 6=#13c299
-palette = 7=#e6e6e6
+palette = 0=#1c1c1c
+palette = 1=#777777
+palette = 2=#8a8a8a
+palette = 3=#9a9a9a
+palette = 4=#aaaaaa
+palette = 5=#bbbbbb
+palette = 6=#cccccc
+palette = 7=#dddddd
 
-palette = 8=#616161
-palette = 9=#ff4d51
-palette = 10=#35d450
-palette = 11=#e9e836
-palette = 12=#5dc5f8
-palette = 13=#feabf2
-palette = 14=#24dfc4
+palette = 8=#444444
+palette = 9=#888888
+palette = 10=#999999
+palette = 11=#aaaaaa
+palette = 12=#bbbbbb
+palette = 13=#cccccc
+palette = 14=#dddddd
 palette = 15=#ffffff
 
 keybind = super+f=text:\x00\x66
